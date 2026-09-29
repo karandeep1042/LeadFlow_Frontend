@@ -18,7 +18,6 @@ const initialState = {
   loading: false,
   error: null,
   resetCodeSent: false,
-  resetCodePreview: null,
 };
 
 const authSlice = createSlice({
@@ -30,7 +29,6 @@ const authSlice = createSlice({
     },
     resetForgotPasswordState(state) {
       state.resetCodeSent = false;
-      state.resetCodePreview = null;
       state.error = null;
     },
     setDemoUser(state, action) {
@@ -51,7 +49,6 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.resetCodeSent = false;
-      state.resetCodePreview = null;
     },
   },
   extraReducers: (builder) => {
@@ -96,10 +93,9 @@ const authSlice = createSlice({
         state.error = null;
         state.resetCodeSent = false;
       })
-      .addCase(forgotPassword.fulfilled, (state, action) => {
+      .addCase(forgotPassword.fulfilled, (state) => {
         state.loading = false;
         state.resetCodeSent = true;
-        state.resetCodePreview = action.payload.resetCode || null;
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.loading = false;
@@ -115,7 +111,6 @@ const authSlice = createSlice({
       .addCase(resetPassword.fulfilled, (state) => {
         state.loading = false;
         state.resetCodeSent = false;
-        state.resetCodePreview = null;
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;

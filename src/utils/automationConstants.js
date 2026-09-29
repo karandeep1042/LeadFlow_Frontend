@@ -37,10 +37,25 @@ export const STAGE_META = {
   'Lost': {
     code: 'Stage 06',
     label: 'Notary & Closing',
-    color: '#e11d48',
-    bgColor: '#fff1f2',
-    badge: 'Stage 06: Notary',
+    color: '#0d9488',
+    bgColor: '#f0fdfa',
+    badge: 'Stage 06: Notary & Closing',
   },
+};
+
+export const getStageDisplayName = (stageKey) => {
+  if (!stageKey) return 'Unknown Stage';
+  if (STAGE_META[stageKey]?.label) return STAGE_META[stageKey].label;
+  if (stageKey === 'Won') return 'Loan Offer & Approval';
+  if (stageKey === 'Lost') return 'Notary & Closing';
+  return stageKey;
+};
+
+export const getStageFullLabel = (stageKey) => {
+  if (!stageKey) return '';
+  const meta = STAGE_META[stageKey];
+  if (meta?.code && meta?.label) return `${meta.code}: ${meta.label}`;
+  return getStageDisplayName(stageKey);
 };
 
 export const DEFAULT_STAGE_TEMPLATES = [
@@ -102,9 +117,23 @@ export const DEFAULT_STAGE_TEMPLATES = [
 
 export const MERGE_TAGS = [
   { tag: '{{client_name}}', label: 'Client Name', sample: 'Rahul Sharma' },
+  { tag: '{{client_email}}', label: 'Client Email', sample: 'rahul.sharma@example.com' },
+  { tag: '{{user_name}}', label: 'User Name', sample: 'Rahul Sharma' },
+  { tag: '{{user_email}}', label: 'User Email', sample: 'rahul.sharma@example.com' },
+  { tag: '{{reset_code}}', label: 'Reset Code', sample: '489215' },
+  { tag: '{{reset_url}}', label: 'Reset URL', sample: 'https://leadflow.app/auth/reset-password' },
+  { tag: '{{temporary_password}}', label: 'Temporary Password', sample: 'Password@123' },
   { tag: '{{advisor_name}}', label: 'Advisor Name', sample: 'Alexander Weber' },
+  { tag: '{{advisor_email}}', label: 'Advisor Email', sample: 'advisor@leadflow.de' },
+  { tag: '{{advisor_phone}}', label: 'Advisor Phone', sample: '+49 (0) 30 1234 5678' },
   { tag: '{{brokerage_name}}', label: 'Brokerage Name', sample: 'HypoExpat Berlin' },
   { tag: '{{loan_amount}}', label: 'Loan Amount', sample: '€450,000' },
   { tag: '{{city}}', label: 'Property City', sample: 'Berlin' },
-  { tag: '{{portal_link}}', label: 'Portal Link', sample: 'https://leadflow.app/portal/client-demo' },
+  { tag: '{{portal_link}}', label: 'Portal Link', sample: 'https://leadflow.app/client/portal' },
+  { tag: '{{login_url}}', label: 'Login URL', sample: 'https://leadflow.app/auth/signin' },
+  { tag: '{{vault_link}}', label: 'Document Vault Link', sample: 'https://leadflow.app/client/documents' },
+  { tag: '{{reason}}', label: 'Reason / Notes', sample: 'Document update required for bank underwriting' },
+  { tag: '{{rejected_docs}}', label: 'Flagged Document List', sample: 'Last 3 Salary Slips, SCHUFA Credit Report' },
+  { tag: '{{stage_label}}', label: 'Stage Label', sample: 'Stage 03: Document Collection' },
+  { tag: '{{support_email}}', label: 'Support Email', sample: 'support@leadflow.de' },
 ];

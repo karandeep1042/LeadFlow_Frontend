@@ -10,8 +10,13 @@ export const KanbanColumn = ({
   onLeadClick,
   onDropLead,
   onAdvanceStage,
+  onRegressToDocs,
   nextStageLabel,
   canChangeStage = true,
+  currentUserId = null,
+  userRole = 'advisor',
+  updatingStageLeadId = null,
+  isMobile = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const meta = STAGE_META[stageKey] || {
@@ -50,8 +55,8 @@ export const KanbanColumn = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       sx={{
-        width: 320,
-        minWidth: 300,
+        width: isMobile ? '100%' : 320,
+        minWidth: isMobile ? 'unset' : 300,
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 3,
@@ -59,7 +64,7 @@ export const KanbanColumn = ({
         border: '1.5px solid',
         borderColor: isDragOver ? '#3b82f6' : '#e2e8f0',
         transition: 'all 0.15s ease',
-        maxHeight: 'calc(100vh - 240px)',
+        maxHeight: isMobile ? 'none' : 'calc(100vh - 240px)',
       }}
     >
       {/* Column Header */}
@@ -111,8 +116,12 @@ export const KanbanColumn = ({
               lead={lead}
               onClick={onLeadClick}
               onAdvanceStage={onAdvanceStage}
+              onRegressToDocs={onRegressToDocs}
               nextStageLabel={nextStageLabel}
               canChangeStage={canChangeStage}
+              currentUserId={currentUserId}
+              userRole={userRole}
+              updatingStageLeadId={updatingStageLeadId}
             />
           ))
         )}

@@ -79,7 +79,7 @@ export const EditTaskModal = ({
             onChange={(e) => setDescription(e.target.value)}
           />
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Linked Expat Lead</InputLabel>
               <Select value={leadId} label="Linked Expat Lead" onChange={(e) => setLeadId(e.target.value)}>
@@ -105,13 +105,13 @@ export const EditTaskModal = ({
             </FormControl>
           </Box>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Priority</InputLabel>
               <Select value={priority} label="Priority" onChange={(e) => setPriority(e.target.value)}>
-                <MenuItem value="high">🔴 High Priority</MenuItem>
-                <MenuItem value="medium">🟡 Medium Priority</MenuItem>
-                <MenuItem value="low">🟢 Low Priority</MenuItem>
+                <MenuItem value="high">High Priority</MenuItem>
+                <MenuItem value="medium">Medium Priority</MenuItem>
+                <MenuItem value="low">Low Priority</MenuItem>
               </Select>
             </FormControl>
 
@@ -123,7 +123,7 @@ export const EditTaskModal = ({
               size="small"
               value={dueAt}
               onChange={(e) => setDueAt(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
 

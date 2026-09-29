@@ -25,15 +25,22 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
     navigate(ROUTES.SIGNIN);
   };
 
+  const organizationName =
+    user?.brokerage?.name ||
+    user?.brokerageName ||
+    (role === 'platform_admin' ? 'Global SaaS Platform' : 'HypoExpat Berlin GmbH');
+
   const renderContent = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box sx={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+        <Box sx={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', flexShrink: 0 }}>
           <Layers size={20} />
         </Box>
-        <Box>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>LeadFlow</Typography>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>Mortgage CRM</Typography>
+          <Typography variant="caption" sx={{ color: '#2563eb', fontWeight: 700, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }}>
+            {organizationName}
+          </Typography>
         </Box>
       </Box>
       <Divider sx={{ mx: 2 }} />
@@ -78,12 +85,17 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
       </Box>
       <Box sx={{ p: 1.5, borderTop: '1px solid #e2e8f0', backgroundColor: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: '#18181b', color: '#ffffff', fontWeight: 700, fontSize: '0.8rem' }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#18181b', color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
             {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </Avatar>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {user?.name || 'Administrator'}
-          </Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.name || 'Administrator'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.7rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {organizationName}
+            </Typography>
+          </Box>
         </Box>
         <Tooltip title="Sign Out">
           <IconButton onClick={handleLogout} size="small" sx={{ color: '#64748b' }}><LogOut size={16} /></IconButton>

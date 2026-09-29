@@ -31,9 +31,15 @@ export const createLead = createAsyncThunk(
 
 export const updateLeadStage = createAsyncThunk(
   'lead/updateLeadStage',
-  async ({ leadId, stage, previousStage }, thunkAPI) => {
+  async ({ leadId, stage, previousStage, resolvePendingTask = true, isRevision, selectedDocIds, reason }, thunkAPI) => {
     try {
-      const response = await axiosInstance.patch(`/api/leads/${leadId}/stage`, { stage });
+      const response = await axiosInstance.patch(`/api/leads/${leadId}/stage`, {
+        stage,
+        resolvePendingTask,
+        isRevision,
+        selectedDocIds,
+        reason,
+      });
       return { leadId, stage, data: response.data };
     } catch (error) {
       return thunkAPI.rejectWithValue({
@@ -99,6 +105,51 @@ export const addLeadNote = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || 'Failed to add note.'
+      );
+    }
+  }
+);
+
+export const declineLead = createAsyncThunk(
+  'lead/declineLead',
+  async ({ leadId, reason }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post(`/api/leads/${leadId}/decline`, { reason });
+      return { leadId, data: response.data };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to decline case.'
+      );
+    }
+  }
+);
+
+export const archiveLead = createAsyncThunk(
+  'lead/archiveLead',
+  async ({ leadId, finalDisbursedAmount, closingNotes }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post(`/api/leads/${leadId}/archive`, {
+        finalDisbursedAmount,
+        closingNotes,
+      });
+      return { leadId, data: response.data };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to archive case.'
+      );
+    }
+  }
+);
+
+export const unarchiveLead = createAsyncThunk(
+  'lead/unarchiveLead',
+  async ({ leadId }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post(`/api/leads/${leadId}/unarchive`);
+      return { leadId, data: response.data };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to restore case.'
       );
     }
   }

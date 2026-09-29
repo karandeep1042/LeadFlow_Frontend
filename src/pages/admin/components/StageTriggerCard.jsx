@@ -28,67 +28,281 @@ export const StageTriggerCard = ({ trigger, onToggle, onEdit, onPreview }) => {
     <Paper
       elevation={0}
       sx={{
-        p: { xs: 2.5, md: 3 },
-        borderRadius: 3,
+        p: { xs: 2, sm: 2.5, md: 3 },
+        borderRadius: { xs: 2.5, sm: 3 },
         border: '1px solid',
         borderColor: isActive ? '#e2e8f0' : '#f1f5f9',
         backgroundColor: isActive ? '#ffffff' : '#fafafa',
-        opacity: isActive ? 1 : 0.8,
+        opacity: isActive ? 1 : 0.85,
         transition: 'all 0.2s ease',
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.75, sm: 2 } }}>
         {/* Header Row */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '10px', backgroundColor: isActive ? meta.bgColor : '#f1f5f9', color: isActive ? meta.color : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.5,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.25, sm: 1.5 } }}>
+            <Box
+              sx={{
+                width: { xs: 38, sm: 42 },
+                height: { xs: 38, sm: 42 },
+                borderRadius: '10px',
+                backgroundColor: isActive ? meta.bgColor : '#f1f5f9',
+                color: isActive ? meta.color : '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
               <Zap size={20} />
             </Box>
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: meta.color }}>{meta.code}</Typography>
-                <Chip label={isActive ? 'Active' : 'Paused'} size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, backgroundColor: isActive ? '#ecfdf5' : '#f1f5f9', color: isActive ? '#059669' : '#64748b' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: meta.color, fontSize: '0.75rem' }}>
+                  {meta.code}
+                </Typography>
+                <Chip
+                  label={isActive ? 'Active' : 'Paused'}
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    backgroundColor: isActive ? '#ecfdf5' : '#f1f5f9',
+                    color: isActive ? '#059669' : '#64748b',
+                  }}
+                />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem' }}>{meta.label}</Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  fontSize: { xs: '0.975rem', sm: '1.05rem' },
+                  lineHeight: 1.25,
+                }}
+              >
+                {meta.label}
+              </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Button size="small" variant="outlined" startIcon={<Eye size={14} />} onClick={() => onPreview(trigger)} sx={{ borderRadius: 2, textTransform: 'none', color: '#475569', borderColor: '#cbd5e1' }}>
+          {/* Desktop Action Group (Buttons + Switch) */}
+          <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1.25 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Eye size={14} />}
+              onClick={() => onPreview(trigger)}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                color: '#475569',
+                borderColor: '#cbd5e1',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                py: 0.5,
+                px: 1.5,
+                '&:hover': { borderColor: '#94a3b8', backgroundColor: '#f8fafc' },
+              }}
+            >
               Preview Email
             </Button>
-            <Button size="small" variant="contained" startIcon={<Edit3 size={14} />} onClick={() => onEdit(trigger)} sx={{ borderRadius: 2, textTransform: 'none', backgroundColor: '#18181b', color: '#ffffff' }}>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<Edit3 size={14} />}
+              onClick={() => onEdit(trigger)}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                backgroundColor: '#18181b',
+                color: '#ffffff',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                py: 0.5,
+                px: 1.5,
+                boxShadow: 'none',
+                '&:hover': { backgroundColor: '#09090b', boxShadow: 'none' },
+              }}
+            >
               Edit Rule
             </Button>
-            <Switch checked={isActive} onChange={() => onToggle(trigger)} color="primary" />
+            <Switch
+              checked={isActive}
+              onChange={() => onToggle(trigger)}
+              color="primary"
+            />
+          </Box>
+
+          {/* Mobile Switch Only in Header */}
+          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center' }}>
+            <Switch
+              checked={isActive}
+              onChange={() => onToggle(trigger)}
+              color="primary"
+              size="small"
+            />
           </Box>
         </Box>
 
+        {/* Mobile Dedicated Responsive Action Row */}
+        <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, width: '100%' }}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Eye size={14} />}
+            onClick={() => onPreview(trigger)}
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              color: '#475569',
+              borderColor: '#cbd5e1',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              py: 0.75,
+              backgroundColor: '#ffffff',
+              '&:hover': { borderColor: '#94a3b8', backgroundColor: '#f8fafc' },
+            }}
+          >
+            Preview Email
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<Edit3 size={14} />}
+            onClick={() => onEdit(trigger)}
+            fullWidth
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              backgroundColor: '#18181b',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              py: 0.75,
+              boxShadow: 'none',
+              '&:hover': { backgroundColor: '#09090b', boxShadow: 'none' },
+            }}
+          >
+            Edit Rule
+          </Button>
+        </Box>
+
         {/* Content Details Grid */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.3fr 1fr' }, gap: 2, pt: 1, borderTop: '1px solid #f1f5f9' }}>
-          <Box sx={{ p: 2, borderRadius: 2, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-              <Mail size={15} color="#2563eb" />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>Borrower Email Notification</Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1.3fr 1fr' },
+            gap: { xs: 1.5, sm: 2 },
+            pt: { xs: 1.5, sm: 2 },
+            borderTop: '1px solid #f1f5f9',
+          }}
+        >
+          {/* Subcard 1: Borrower Email */}
+          <Box
+            sx={{
+              p: { xs: 1.5, sm: 2 },
+              borderRadius: 2,
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                <Mail size={15} color="#2563eb" />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.825rem' }}>
+                  Borrower Email Notification
+                </Typography>
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  mb: 0.5,
+                  fontSize: '0.825rem',
+                  wordBreak: 'break-word',
+                  lineHeight: 1.35,
+                }}
+              >
+                Subject: {subject}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#64748b',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  lineHeight: 1.45,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {body || '(No body copy configured)'}
+              </Typography>
             </Box>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>Subject: {subject}</Typography>
-            <Typography variant="caption" sx={{ color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {body || '(No body copy configured)'}
-            </Typography>
           </Box>
 
-          <Box sx={{ p: 2, borderRadius: 2, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckSquare size={15} color="#059669" />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>Advisor Task Generation</Typography>
+          {/* Subcard 2: Advisor Task */}
+          <Box
+            sx={{
+              p: { xs: 1.5, sm: 2 },
+              borderRadius: 2,
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckSquare size={15} color="#059669" />
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.825rem' }}>
+                    Advisor Task Generation
+                  </Typography>
+                </Box>
+                <Chip
+                  label={(trigger.taskPriority || 'medium').toUpperCase()}
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.625rem',
+                    fontWeight: 800,
+                    backgroundColor: currentPriority.bg,
+                    color: currentPriority.color,
+                  }}
+                />
               </Box>
-              <Chip label={(trigger.taskPriority || 'medium').toUpperCase()} size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 800, backgroundColor: currentPriority.bg, color: currentPriority.color }} />
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  mb: 0.75,
+                  fontSize: '0.825rem',
+                  wordBreak: 'break-word',
+                  lineHeight: 1.35,
+                }}
+              >
+                {trigger.taskTitle || 'Standard stage follow-up checklist'}
+              </Typography>
             </Box>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', mb: 0.5 }}>
-              {trigger.taskTitle || 'Standard stage follow-up checklist'}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#64748b', fontSize: '0.75rem' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#64748b', fontSize: '0.75rem', mt: 'auto', pt: 0.5 }}>
               <Clock size={13} />
               <span>Due within {trigger.taskDueHours || 24} hours of stage entry</span>
             </Box>

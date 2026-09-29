@@ -94,6 +94,23 @@ export const forgotPassword = createAsyncThunk(
   }
 );
 
+export const verifyResetCode = createAsyncThunk(
+  'auth/verifyResetCode',
+  async ({ email, resetCode }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/auth/verify-reset-code', {
+        email,
+        resetCode,
+      });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Invalid or expired verification code.'
+      );
+    }
+  }
+);
+
 export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async ({ email, resetCode, newPassword }, thunkAPI) => {
@@ -111,4 +128,39 @@ export const resetPassword = createAsyncThunk(
     }
   }
 );
+
+export const sendSignupVerificationCode = createAsyncThunk(
+  'auth/sendSignupVerificationCode',
+  async ({ email, name }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/auth/send-signup-verification-code', {
+        email,
+        name,
+      });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to send verification code.'
+      );
+    }
+  }
+);
+
+export const verifySignupCode = createAsyncThunk(
+  'auth/verifySignupCode',
+  async ({ email, code }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/auth/verify-signup-code', {
+        email,
+        code,
+      });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Invalid or expired verification code.'
+      );
+    }
+  }
+);
+
 

@@ -8,12 +8,11 @@ import {
   Button,
   IconButton,
   InputAdornment,
-  Alert,
   CircularProgress,
 } from '@mui/material';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
-import DemoAccountsBar from '../../components/auth/DemoAccountsBar';
+import NotificationAlert from '../../components/common/NotificationAlert';
 import { loginUser } from '../../redux/thunks/authThunk';
 import { clearAuthError } from '../../redux/slices/authSlice';
 import { ROUTES } from '../../utils/constants/routes';
@@ -26,11 +25,25 @@ export const SignInPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [validationError, setValidationError] = useState('');
+  const [toast, setToast] = useState({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
 
   useEffect(() => {
     dispatch(clearAuthError());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      setToast({
+        open: true,
+        message: error,
+        severity: 'error',
+      });
+    }
+  }, [error]);
 
   useEffect(() => {
     if (isAuthenticated && role) {
@@ -44,21 +57,39 @@ export const SignInPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setValidationError('');
-    if (!email.trim()) return setValidationError('Please enter your email address.');
-    if (!password) return setValidationError('Please enter your password.');
+    if (!email.trim()) {
+      setToast({
+        open: true,
+        message: 'Please enter your email address.',
+        severity: 'error',
+      });
+      return;
+    }
+    if (!password) {
+      setToast({
+        open: true,
+        message: 'Please enter your password.',
+        severity: 'error',
+      });
+      return;
+    }
     dispatch(loginUser({ email: email.trim(), password }));
-  };
-
-  const handleSelectDemoAccount = (demoAcc) => {
-    setEmail(demoAcc.email);
-    setPassword(demoAcc.password);
-    setValidationError('');
-    dispatch(loginUser({ email: demoAcc.email, password: demoAcc.password }));
   };
 
   return (
     <AuthLayout headline="Hello LeadFlow!" subtext="Skip repetitive and manual sales-marketing tasks. Get highly productive through automation and save tons of time!">
+      {/* Top-Right Floating Notification Alert */}
+      <NotificationAlert
+        open={toast.open}
+        message={toast.message}
+        severity={toast.severity}
+        onClose={() => {
+          setToast((prev) => ({ ...prev, open: false }));
+          dispatch(clearAuthError());
+        }}
+        autoHideDuration={5000}
+      />
+
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" sx={{ fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: '#0f172a' }}>
           LeadFlow
@@ -78,43 +109,62 @@ export const SignInPage = () => {
         </Typography>
       </Box>
 
-      {(error || validationError) && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2.5 }} onClose={() => { setValidationError(''); dispatch(clearAuthError()); }}>
-          {validationError || error}
-        </Alert>
-      )}
-
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Box sx={{ mb: 2.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', mb: 0.75, fontSize: '0.85rem' }}>
+            Email Address
+          </Typography>
           <TextField
             id="email"
-            placeholder="hisalim.ux@gmail.com"
+            placeholder="e.g. yourname@brokerage.de"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setValidationError(''); }}
+            onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><Mail size={18} style={{ color: '#94a3b8' }} /></InputAdornment>,
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Mail size={18} style={{ color: '#94a3b8' }} />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
         </Box>
 
         <Box sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', mb: 0.75, fontSize: '0.85rem' }}>
+            Password
+          </Typography>
           <TextField
             id="password"
             type={showPassword ? 'text' : 'password'}
-            placeholder="Password"
+            placeholder="Enter your password"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); setValidationError(''); }}
+            onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><Lock size={18} style={{ color: '#94a3b8' }} /></InputAdornment>,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small">
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </IconButton>
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock size={18} style={{ color: '#94a3b8' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      edge="end"
+                      size="small"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a' } }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
             }}
           />
         </Box>
@@ -138,8 +188,6 @@ export const SignInPage = () => {
           </Typography>
         </Box>
       </Box>
-
-      <DemoAccountsBar onSelectDemoAccount={handleSelectDemoAccount} activeEmail={email} />
     </AuthLayout>
   );
 };

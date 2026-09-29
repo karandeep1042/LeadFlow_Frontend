@@ -3,8 +3,17 @@ import {
   fetchTenants,
   createTenant,
   toggleTenantStatus,
+  updateTenantDetails,
   fetchTenantMetrics,
   fetchPlatformOverviewMetrics,
+  fetchPlatformTemplates,
+  updatePlatformTemplate,
+  resetPlatformTemplate,
+  sendTestPlatformEmail,
+  testSmtpConnection,
+  fetchPlatformHealth,
+  updateSuperAdminProfile,
+  updateSuperAdminPassword,
 } from '../thunks/tenantThunk';
 
 const initialState = {
@@ -15,12 +24,25 @@ const initialState = {
     totalBrokerages: 0,
     activeBrokerages: 0,
     suspendedBrokerages: 0,
+    totalLeads: 0,
     totalMortgagesAcquired: 0,
     totalVolumeEur: 0,
-    documentAcceptedRate: 0,
-    documentRejectedRate: 0,
+    totalDocs: 0,
+    verifiedDocs: 0,
+    rejectedDocs: 0,
+    pendingDocs: 0,
+    documentAcceptedRate: 94.2,
+    documentRejectedRate: 5.8,
+    funnel: [],
+    leaderboard: [],
   },
+  platformTemplates: [],
+  selectedTemplate: null,
+  smtpStatus: null,
+  platformHealth: null,
   loading: false,
+  templateLoading: false,
+  actionLoading: false,
   error: null,
 };
 
@@ -36,6 +58,31 @@ const tenantSlice = createSlice({
     },
     clearSelectedTenantMetrics(state) {
       state.selectedTenantMetrics = null;
+    },
+    setSelectedTemplate(state, action) {
+      state.selectedTemplate = action.payload;
+    },
+    tenantStatusUpdated(state, action) {
+      const { tenantId, status, banReason } = action.payload;
+      const tenant = state.tenants.find((t) => String(t._id || t.id) === String(tenantId));
+      if (tenant) {
+        tenant.status = status;
+        tenant.banReason = banReason;
+      }
+    },
+    tenantCreated(state, action) {
+      const newTenant = action.payload;
+      const exists = state.tenants.some((t) => String(t._id || t.id) === String(newTenant._id || newTenant.id));
+      if (!exists) {
+        state.tenants.unshift(newTenant);
+      }
+    },
+    tenantDetailsUpdated(state, action) {
+      const updated = action.payload;
+      const idx = state.tenants.findIndex((t) => String(t._id || t.id) === String(updated._id || updated.id));
+      if (idx !== -1) {
+        state.tenants[idx] = { ...state.tenants[idx], ...updated };
+      }
     },
   },
   extraReducers: (builder) => {
@@ -56,27 +103,38 @@ const tenantSlice = createSlice({
 
       // Create Tenant
       .addCase(createTenant.pending, (state) => {
-        state.loading = true;
+        state.actionLoading = true;
         state.error = null;
       })
       .addCase(createTenant.fulfilled, (state, action) => {
-        state.loading = false;
+        state.actionLoading = false;
         const newTenant = action.payload.data || action.payload;
         if (newTenant) {
-          state.tenants.unshift(newTenant);
+          const exists = state.tenants.some((t) => String(t._id || t.id) === String(newTenant._id || newTenant.id));
+          if (!exists) state.tenants.unshift(newTenant);
         }
       })
       .addCase(createTenant.rejected, (state, action) => {
-        state.loading = false;
+        state.actionLoading = false;
         state.error = action.payload;
       })
 
       // Toggle Tenant Status (Suspend / Reactivate)
       .addCase(toggleTenantStatus.fulfilled, (state, action) => {
-        const { tenantId, status } = action.payload;
+        const { tenantId, status, reason } = action.payload;
         const tenant = state.tenants.find((t) => String(t._id || t.id) === String(tenantId));
         if (tenant) {
           tenant.status = status;
+          if (reason) tenant.banReason = reason;
+        }
+      })
+
+      // Update Tenant Details
+      .addCase(updateTenantDetails.fulfilled, (state, action) => {
+        const { tenantId, data } = action.payload;
+        const idx = state.tenants.findIndex((t) => String(t._id || t.id) === String(tenantId));
+        if (idx !== -1 && data) {
+          state.tenants[idx] = { ...state.tenants[idx], ...data };
         }
       })
 
@@ -91,9 +149,68 @@ const tenantSlice = createSlice({
           ...state.platformMetrics,
           ...(action.payload.data || action.payload),
         };
+      })
+
+      // Fetch Platform Templates
+      .addCase(fetchPlatformTemplates.pending, (state) => {
+        state.templateLoading = true;
+      })
+      .addCase(fetchPlatformTemplates.fulfilled, (state, action) => {
+        state.templateLoading = false;
+        state.platformTemplates = action.payload.data?.templates || action.payload.data || [];
+        if (!state.selectedTemplate && state.platformTemplates.length > 0) {
+          state.selectedTemplate = state.platformTemplates[0];
+        }
+      })
+      .addCase(fetchPlatformTemplates.rejected, (state, action) => {
+        state.templateLoading = false;
+        state.error = action.payload;
+      })
+
+      // Update Platform Template
+      .addCase(updatePlatformTemplate.fulfilled, (state, action) => {
+        const { key, data } = action.payload;
+        const idx = state.platformTemplates.findIndex((t) => t.key === key);
+        if (idx !== -1 && data) {
+          state.platformTemplates[idx] = data;
+          if (state.selectedTemplate?.key === key) {
+            state.selectedTemplate = data;
+          }
+        }
+      })
+
+      // Reset Platform Template
+      .addCase(resetPlatformTemplate.fulfilled, (state, action) => {
+        const { key, data } = action.payload;
+        const idx = state.platformTemplates.findIndex((t) => t.key === key);
+        if (idx !== -1 && data) {
+          state.platformTemplates[idx] = data;
+          if (state.selectedTemplate?.key === key) {
+            state.selectedTemplate = data;
+          }
+        }
+      })
+
+      // Test SMTP Connection
+      .addCase(testSmtpConnection.fulfilled, (state, action) => {
+        state.smtpStatus = action.payload;
+      })
+
+      // Fetch Platform Health
+      .addCase(fetchPlatformHealth.fulfilled, (state, action) => {
+        state.platformHealth = action.payload.data;
       });
   },
 });
 
-export const { clearTenantError, setSelectedTenant, clearSelectedTenantMetrics } = tenantSlice.actions;
+export const {
+  clearTenantError,
+  setSelectedTenant,
+  clearSelectedTenantMetrics,
+  setSelectedTemplate,
+  tenantStatusUpdated,
+  tenantCreated,
+  tenantDetailsUpdated,
+} = tenantSlice.actions;
+
 export default tenantSlice.reducer;

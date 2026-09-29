@@ -7,10 +7,15 @@ import {
   convertToClient,
   resolveDuplicate,
   addLeadNote,
+  declineLead,
+  archiveLead,
+  unarchiveLead,
 } from '../thunks/leadThunk';
+import { toggleClientStatus } from '../thunks/clientThunk';
 
 const initialState = {
   leads: [],
+  counts: { active: 0, archived: 0 },
   selectedLead: null,
   activeFilter: 'all', // 'all' | 'my' | 'duplicates' | 'high_value' | 'unassigned'
   selectedAdvisorFilter: 'all', // 'all' | advisorId | 'unassigned'
@@ -18,6 +23,7 @@ const initialState = {
   loading: false,
   error: null,
   stageUpdateLoading: false,
+  updatingStageLeadId: null,
   assigningAdvisor: false,
 };
 
@@ -42,6 +48,7 @@ const leadSlice = createSlice({
     },
     onLeadCreatedWs(state, action) {
       const incomingLead = action.payload;
+      if (!incomingLead) return;
       const exists = state.leads.some((l) => String(l._id || l.id) === String(incomingLead._id || incomingLead.id));
       if (!exists) {
         state.leads.unshift(incomingLead);
@@ -49,12 +56,31 @@ const leadSlice = createSlice({
     },
     onLeadUpdatedWs(state, action) {
       const updatedLead = action.payload;
-      const index = state.leads.findIndex((l) => String(l._id || l.id) === String(updatedLead._id || updatedLead.id));
+      if (!updatedLead) return;
+      const leadId = String(updatedLead._id || updatedLead.id);
+      const index = state.leads.findIndex((l) => String(l._id || l.id) === leadId);
       if (index !== -1) {
         state.leads[index] = { ...state.leads[index], ...updatedLead };
+      } else {
+        state.leads.unshift(updatedLead);
       }
-      if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(updatedLead._id || updatedLead.id)) {
+      if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === leadId) {
         state.selectedLead = { ...state.selectedLead, ...updatedLead };
+      }
+    },
+    onLeadNoteAddedWs(state, action) {
+      const { leadId, note } = action.payload || {};
+      if (!leadId || !note) return;
+      const lead = state.leads.find((l) => String(l._id || l.id) === String(leadId));
+      if (lead) {
+        if (!lead.notesList) lead.notesList = [];
+        const exists = lead.notesList.some((n) => n._id && note._id && String(n._id) === String(note._id));
+        if (!exists) lead.notesList.push(note);
+      }
+      if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId)) {
+        if (!state.selectedLead.notesList) state.selectedLead.notesList = [];
+        const exists = state.selectedLead.notesList.some((n) => n._id && note._id && String(n._id) === String(note._id));
+        if (!exists) state.selectedLead.notesList.push(note);
       }
     },
   },
@@ -68,6 +94,9 @@ const leadSlice = createSlice({
       .addCase(fetchLeads.fulfilled, (state, action) => {
         state.loading = false;
         state.leads = action.payload.data?.leads || action.payload.data || action.payload || [];
+        if (action.payload.data?.counts) {
+          state.counts = action.payload.data.counts;
+        }
       })
       .addCase(fetchLeads.rejected, (state, action) => {
         state.loading = false;
@@ -93,29 +122,48 @@ const leadSlice = createSlice({
 
       // Optimistic Drag-and-Drop Stage Update
       .addCase(updateLeadStage.pending, (state, action) => {
-        const { leadId, stage } = action.meta.arg;
+        const { leadId, stage, previousStage } = action.meta.arg;
+        state.updatingStageLeadId = String(leadId);
+        state.error = null;
         const lead = state.leads.find((l) => String(l._id || l.id) === String(leadId));
         if (lead) {
           lead.stage = stage;
+          if (!lead.assignedAdvisorId && previousStage === 'New' && stage === 'Contacted') {
+            lead.isClaiming = true;
+          }
         }
         if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId)) {
           state.selectedLead.stage = stage;
         }
       })
       .addCase(updateLeadStage.fulfilled, (state, action) => {
+        state.updatingStageLeadId = null;
         const { leadId, data } = action.payload;
+        const populatedLead = data?.data || data;
         const index = state.leads.findIndex((l) => String(l._id || l.id) === String(leadId));
-        if (index !== -1 && data?.data) {
-          state.leads[index] = { ...state.leads[index], ...data.data };
+        if (index !== -1 && populatedLead) {
+          state.leads[index] = { ...state.leads[index], ...populatedLead, isClaiming: false };
+        }
+        if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId) && populatedLead) {
+          state.selectedLead = { ...state.selectedLead, ...populatedLead };
         }
       })
       .addCase(updateLeadStage.rejected, (state, action) => {
+        state.updatingStageLeadId = null;
         // Rollback on failure
         const { leadId, previousStage } = action.payload || {};
-        if (leadId && previousStage) {
+        if (leadId) {
           const lead = state.leads.find((l) => String(l._id || l.id) === String(leadId));
           if (lead) {
-            lead.stage = previousStage;
+            if (previousStage) {
+              lead.stage = previousStage;
+            }
+            lead.isClaiming = false;
+          }
+          if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId)) {
+            if (previousStage) {
+              state.selectedLead.stage = previousStage;
+            }
           }
         }
         state.error = action.payload?.error || 'Failed to update stage';
@@ -161,6 +209,43 @@ const leadSlice = createSlice({
         }
       })
 
+      // Toggle Client Status (Deactivate / Reactivate)
+      .addCase(toggleClientStatus.fulfilled, (state, action) => {
+        const { clientId, status, data } = action.payload;
+        const returnedLead = data?.data?.lead || data?.lead;
+        const userId = data?.data?.userId;
+
+        const updateItem = (lead) => {
+          if (returnedLead) {
+            Object.assign(lead, returnedLead);
+          } else {
+            lead.isConverted = true;
+            if (typeof lead.clientId === 'object' && lead.clientId !== null) {
+              lead.clientId = { ...lead.clientId, status };
+            } else {
+              lead.clientStatus = status;
+            }
+          }
+        };
+
+        const lead = state.leads.find(
+          (l) =>
+            String(l._id || l.id) === String(clientId) ||
+            (l.clientId && (String(l.clientId._id || l.clientId) === String(clientId) || (userId && String(l.clientId._id || l.clientId) === String(userId))))
+        );
+        if (lead) updateItem(lead);
+
+        if (
+          state.selectedLead &&
+          (String(state.selectedLead._id || state.selectedLead.id) === String(clientId) ||
+            (state.selectedLead.clientId &&
+              (String(state.selectedLead.clientId._id || state.selectedLead.clientId) === String(clientId) ||
+                (userId && String(state.selectedLead.clientId._id || state.selectedLead.clientId) === String(userId)))))
+        ) {
+          updateItem(state.selectedLead);
+        }
+      })
+
       // Resolve Duplicate
       .addCase(resolveDuplicate.fulfilled, (state, action) => {
         const updated = action.payload.data?.data || action.payload.data;
@@ -190,6 +275,45 @@ const leadSlice = createSlice({
           if (!state.selectedLead.notesList) state.selectedLead.notesList = [];
           state.selectedLead.notesList.push(note);
         }
+      })
+
+      // Decline Lead
+      .addCase(declineLead.fulfilled, (state, action) => {
+        const updated = action.payload.data?.data || action.payload.data;
+        const { leadId } = action.payload;
+        const index = state.leads.findIndex((l) => String(l._id || l.id) === String(leadId));
+        if (index !== -1 && updated) {
+          state.leads[index] = { ...state.leads[index], ...updated };
+        }
+        if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId) && updated) {
+          state.selectedLead = { ...state.selectedLead, ...updated };
+        }
+      })
+
+      // Archive Lead
+      .addCase(archiveLead.fulfilled, (state, action) => {
+        const updated = action.payload.data?.data || action.payload.data;
+        const { leadId } = action.payload;
+        const index = state.leads.findIndex((l) => String(l._id || l.id) === String(leadId));
+        if (index !== -1 && updated) {
+          state.leads[index] = { ...state.leads[index], ...updated };
+        }
+        if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId) && updated) {
+          state.selectedLead = { ...state.selectedLead, ...updated };
+        }
+      })
+
+      // Unarchive Lead
+      .addCase(unarchiveLead.fulfilled, (state, action) => {
+        const updated = action.payload.data?.data || action.payload.data;
+        const { leadId } = action.payload;
+        const index = state.leads.findIndex((l) => String(l._id || l.id) === String(leadId));
+        if (index !== -1 && updated) {
+          state.leads[index] = { ...state.leads[index], ...updated };
+        }
+        if (state.selectedLead && String(state.selectedLead._id || state.selectedLead.id) === String(leadId) && updated) {
+          state.selectedLead = { ...state.selectedLead, ...updated };
+        }
       });
   },
 });
@@ -202,6 +326,7 @@ export const {
   setSearchQuery,
   onLeadCreatedWs,
   onLeadUpdatedWs,
+  onLeadNoteAddedWs,
 } = leadSlice.actions;
 
 export default leadSlice.reducer;
