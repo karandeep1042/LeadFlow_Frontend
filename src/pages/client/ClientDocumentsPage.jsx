@@ -47,20 +47,26 @@ const ClientDocumentsPage = () => {
     try {
       setUploadingType(def.docType);
       const leadId = portalData?.lead?._id;
-      await dispatch(uploadDocument({
-        leadId: leadId && leadId !== 'case-default' ? leadId : null,
-        clientId: user?._id || user?.id,
-        docType: def.docType,
-        category: def.category,
-        title: def.title,
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type || 'application/pdf',
-      })).unwrap();
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('docType', def.docType);
+      formData.append('category', def.category || 'personal');
+      formData.append('title', def.title);
+      formData.append('fileName', file.name);
+      formData.append('fileSize', String(file.size));
+      formData.append('mimeType', file.type || 'application/pdf');
+      if (leadId && leadId !== 'case-default') {
+        formData.append('leadId', leadId);
+      }
+      if (user?._id || user?.id) {
+        formData.append('clientId', user?._id || user?.id);
+      }
+
+      await dispatch(uploadDocument(formData)).unwrap();
       setToast({ open: true, message: `Uploaded "${file.name}". OCR verification queued (~4s)...`, severity: 'info' });
       dispatch(fetchClientPortalOverview());
     } catch (err) {
-      setToast({ open: true, message: `Upload error: ${err.message || 'Failed to upload file'}`, severity: 'error' });
+      setToast({ open: true, message: `Upload error: ${err.message || err || 'Failed to upload file'}`, severity: 'error' });
     } finally {
       setUploadingType(null);
     }

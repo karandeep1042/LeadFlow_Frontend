@@ -12,6 +12,7 @@ import {
   Divider,
 } from '@mui/material';
 import { FileText, CheckCircle2, AlertCircle, Clock, ExternalLink, Calendar, HardDrive } from 'lucide-react';
+import { openDocumentInNewTab } from '../../../utils/documentUrl';
 
 const ClientDocumentPreviewModal = ({ open, document, onClose }) => {
   if (!document) return null;
@@ -172,7 +173,7 @@ const ClientDocumentPreviewModal = ({ open, document, onClose }) => {
         <Button
           variant="contained"
           endIcon={<ExternalLink size={15} />}
-          onClick={() => window.open(document.fileUrl || '#', '_blank')}
+          onClick={() => openDocumentInNewTab(document.fileUrl)}
           sx={{
             textTransform: 'none',
             fontWeight: 700,
@@ -184,7 +185,7 @@ const ClientDocumentPreviewModal = ({ open, document, onClose }) => {
             boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
           }}
         >
-          Open Original File
+          Open Document in New Page
         </Button>
       </DialogActions>
     </Dialog>

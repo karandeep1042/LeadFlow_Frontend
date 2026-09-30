@@ -50,7 +50,7 @@ export const ClosedPortfolioTable = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Portfolio Top Metrics */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 2.5, width: '100%' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' }, gap: 2.5, width: '100%' }}>
         <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
           <CardContent sx={{ p: 2.5 }}>
             <Stack direction="row" spacing={2} alignItems="center">
@@ -59,7 +59,7 @@ export const ClosedPortfolioTable = ({
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Total Closed Volume</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>€{totalVolume.toLocaleString('de-DE')}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.1rem', lg: '1.5rem' } }}>€{totalVolume.toLocaleString('de-DE')}</Typography>
               </Box>
             </Stack>
           </CardContent>
@@ -73,7 +73,7 @@ export const ClosedPortfolioTable = ({
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Executed & Disbursed</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>{completedCount} Mortgage{completedCount === 1 ? '' : 's'}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.1rem', lg: '1.5rem' } }}>{completedCount} Mortgage{completedCount === 1 ? '' : 's'}</Typography>
               </Box>
             </Stack>
           </CardContent>
@@ -87,7 +87,7 @@ export const ClosedPortfolioTable = ({
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Declined / Failed Cases</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>{declinedCount} Case{declinedCount === 1 ? '' : 's'}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.1rem', lg: '1.5rem' } }}>{declinedCount} Case{declinedCount === 1 ? '' : 's'}</Typography>
               </Box>
             </Stack>
           </CardContent>
@@ -187,13 +187,6 @@ export const ClosedPortfolioTable = ({
                     <Button size="small" variant="outlined" startIcon={<Eye size={13} />} onClick={(e) => { e.stopPropagation(); onLeadClick && onLeadClick(lead); }} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, color: '#334155', borderColor: '#cbd5e1', fontSize: '0.75rem' }}>
                       Dossier
                     </Button>
-                    {lead.isArchived && (isAdmin || isMineCard) && (
-                      <Tooltip title="Restore back to active pipeline" arrow>
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); onUnarchiveLead && onUnarchiveLead(leadId); }} sx={{ border: '1px solid #e2e8f0', color: '#64748b' }}>
-                          <RotateCcw size={14} />
-                        </IconButton>
-                      </Tooltip>
-                    )}
                   </Box>
                 </Paper>
               );
@@ -284,7 +277,6 @@ export const ClosedPortfolioTable = ({
                       </TableCell>
 
                       <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
                           <Tooltip title="View Case Dossier" arrow>
                             <Button
                               size="small"
@@ -296,19 +288,6 @@ export const ClosedPortfolioTable = ({
                               Dossier
                             </Button>
                           </Tooltip>
-
-                          {lead.isArchived && (isAdmin || isMine) && (
-                            <Tooltip title="Restore back to active pipeline" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => onUnarchiveLead && onUnarchiveLead(leadId)}
-                                sx={{ border: '1px solid #e2e8f0', color: '#64748b' }}
-                              >
-                                <RotateCcw size={14} />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Stack>
                       </TableCell>
                     </TableRow>
                   );

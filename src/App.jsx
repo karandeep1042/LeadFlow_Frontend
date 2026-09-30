@@ -13,6 +13,7 @@ import SignInPage from './pages/auth/SignInPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import SetInitialPasswordPage from './pages/auth/SetInitialPasswordPage';
 import UnauthorizedPage from './pages/auth/UnauthorizedPage';
 
 // Platform Admin Pages
@@ -48,7 +49,7 @@ function App() {
   useSocket();
 
   useEffect(() => {
-    // Attempt session re-authentication on cold start only if token is present
+    // Re-authenticate session on application load / page reload
     const token = getAccessToken();
     if (token) {
       dispatch(fetchCurrentUser());
@@ -60,12 +61,13 @@ function App() {
       <CssBaseline />
       <BrowserRouter>
         <Routes>
-          {/* Public Auth Routes */}
+          {/* Public / Auth Routes */}
           <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.SIGNIN} replace />} />
           <Route path={ROUTES.SIGNIN} element={<SignInPage />} />
           <Route path={ROUTES.SIGNUP} element={<SignUpPage />} />
           <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
           <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+          <Route path={ROUTES.SET_INITIAL_PASSWORD} element={<SetInitialPasswordPage />} />
           <Route path={ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
 
           {/* Protected Platform Admin Routes */}

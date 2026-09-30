@@ -85,14 +85,14 @@ const MortgageRoadmapStepper = ({ stages = [], currentStage = 'Document Collecti
   const defaultStages = [
     {
       id: 1,
-      title: 'Consultation',
+      title: 'Initial Consultation',
       subtitle: 'Discovery & Eligibility',
       description: 'Budget audit and bank qualification completed.',
       status: 'completed',
     },
     {
       id: 2,
-      title: 'Doc Collection',
+      title: 'Document Collection',
       subtitle: 'Audit & Compliance',
       description: 'Upload German payslips, SCHUFA, and ID documents.',
       status: 'current',

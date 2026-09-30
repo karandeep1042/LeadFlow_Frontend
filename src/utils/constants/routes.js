@@ -5,6 +5,7 @@ export const ROUTES = {
   SIGNUP: '/signup',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+  SET_INITIAL_PASSWORD: '/set-new-password',
   UNAUTHORIZED: '/unauthorized',
 
   // Platform Admin

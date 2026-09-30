@@ -21,6 +21,14 @@ const initialState = {
   error: null,
 };
 
+const getArgDocType = (arg) => {
+  if (!arg) return null;
+  if (typeof FormData !== 'undefined' && arg instanceof FormData) {
+    return arg.get('docType');
+  }
+  return arg.docType;
+};
+
 const documentSlice = createSlice({
   name: 'document',
   initialState,
@@ -94,11 +102,11 @@ const documentSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(uploadDocument.pending, (state, action) => {
-        const docType = action.meta.arg?.docType;
+        const docType = getArgDocType(action.meta.arg);
         if (docType) state.uploadingDocTypes[docType] = true;
       })
       .addCase(uploadDocument.fulfilled, (state, action) => {
-        const docType = action.meta.arg?.docType;
+        const docType = getArgDocType(action.meta.arg);
         if (docType) delete state.uploadingDocTypes[docType];
         const uploadedDoc = action.payload.data || action.payload;
         if (uploadedDoc) {
@@ -114,7 +122,7 @@ const documentSlice = createSlice({
         }
       })
       .addCase(uploadDocument.rejected, (state, action) => {
-        const docType = action.meta.arg?.docType;
+        const docType = getArgDocType(action.meta.arg);
         if (docType) delete state.uploadingDocTypes[docType];
         state.error = action.payload;
       })

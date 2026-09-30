@@ -34,19 +34,79 @@ const PRESETS = {
       notes: 'Equity deposit: €70,000.',
     },
   },
+  calendly: {
+    name: 'Calendly (Mortgage Booking)',
+    payload: {
+      firstName: 'Marcus',
+      lastName: 'Vance',
+      email: 'marcus.vance@expatberlin.com',
+      phone: '+49 151 23456789',
+      loanAmount: 520000,
+      city: 'Munich',
+      notes: 'Booked 30-min German mortgage consultation.',
+    },
+  },
+  custom: {
+    name: 'Custom Webhook (Expat Inbound)',
+    payload: {
+      first_name: 'Sophie',
+      last_name: 'Dupont',
+      email: 'sophie.dupont@paris-berlin.eu',
+      phone: '+49 172 8889900',
+      loan_amount: 480000,
+      city: 'Hamburg',
+      visa_type: 'EU Citizen',
+      notes: 'Looking to purchase an apartment in Hamburg.',
+    },
+  },
 };
 
-export const WebhookTester = ({ sources, selectedSourceId, onSelectSource }) => {
+export const WebhookTester = ({ sources = [], selectedSourceId, onSelectSource }) => {
   const dispatch = useDispatch();
   const { testRunnerLoading, testRunnerResult } = useSelector((state) => state.integration);
   const [presetKey, setPresetKey] = useState('immoscout');
   const [jsonText, setJsonText] = useState(JSON.stringify(PRESETS.immoscout.payload, null, 2));
   const [error, setError] = useState('');
 
+  const handleSourceChange = (sourceId) => {
+    if (onSelectSource) {
+      onSelectSource(sourceId);
+    }
+    setError('');
+    const src = sources.find((s) => (s._id || s.id) === sourceId);
+    if (src) {
+      const p = (src.provider || '').toLowerCase();
+      const n = (src.name || '').toLowerCase();
+      if (p === 'typeform' || n.includes('typeform')) {
+        setPresetKey('typeform');
+        setJsonText(JSON.stringify(PRESETS.typeform.payload, null, 2));
+      } else if (p === 'calendly' || n.includes('calendly')) {
+        setPresetKey('calendly');
+        setJsonText(JSON.stringify(PRESETS.calendly.payload, null, 2));
+      } else if (n.includes('immo') || p === 'custom') {
+        setPresetKey('immoscout');
+        setJsonText(JSON.stringify(PRESETS.immoscout.payload, null, 2));
+      }
+    }
+  };
+
   const handlePresetSelect = (key) => {
     setPresetKey(key);
     setJsonText(JSON.stringify(PRESETS[key].payload, null, 2));
     setError('');
+    if (sources && sources.length > 0) {
+      const match = sources.find((s) => {
+        const p = (s.provider || '').toLowerCase();
+        const n = (s.name || '').toLowerCase();
+        if (key === 'immoscout' && (n.includes('immo') || p === 'custom')) return true;
+        if (key === 'typeform' && (p === 'typeform' || n.includes('typeform'))) return true;
+        if (key === 'calendly' && (p === 'calendly' || n.includes('calendly'))) return true;
+        return false;
+      });
+      if (match && onSelectSource) {
+        onSelectSource(match._id || match.id);
+      }
+    }
   };
 
   const runTest = (dryRun) => {
@@ -128,16 +188,45 @@ export const WebhookTester = ({ sources, selectedSourceId, onSelectSource }) => 
             select
             label="Target Source"
             value={selectedSourceId || ''}
-            onChange={(e) => onSelectSource(e.target.value)}
+            onChange={(e) => handleSourceChange(e.target.value)}
             fullWidth
             size="small"
+            SelectProps={{
+              displayEmpty: true,
+              renderValue: (selected) => {
+                if (!selected) {
+                  return (
+                    <Typography component="span" sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                      {sources && sources.length > 0 ? 'Select a target source...' : 'No webhook sources available'}
+                    </Typography>
+                  );
+                }
+                const found = sources.find((s) => (s._id || s.id) === selected);
+                return found ? `${found.name} (${(found.provider || 'custom').toUpperCase()})` : selected;
+              },
+            }}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#f8fafc' } }}
           >
-            {sources.map((s) => (
-              <MenuItem key={s._id || s.id} value={s._id || s.id}>
-                {s.name} ({s.provider})
+            {sources && sources.length > 0 ? (
+              sources.map((s) => (
+                <MenuItem key={s._id || s.id} value={s._id || s.id}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>
+                      {s.name}
+                    </Typography>
+                    <Chip
+                      label={(s.provider || 'custom').toUpperCase()}
+                      size="small"
+                      sx={{ height: 18, fontSize: '0.625rem', fontWeight: 800, backgroundColor: '#eff6ff', color: '#2563eb' }}
+                    />
+                  </Box>
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem value="" disabled>
+                <Typography sx={{ fontSize: '0.85rem', color: '#94a3b8' }}>No webhook sources configured</Typography>
               </MenuItem>
-            ))}
+            )}
           </TextField>
 
           <TextField
@@ -151,6 +240,8 @@ export const WebhookTester = ({ sources, selectedSourceId, onSelectSource }) => 
           >
             <MenuItem value="immoscout">{PRESETS.immoscout.name}</MenuItem>
             <MenuItem value="typeform">{PRESETS.typeform.name}</MenuItem>
+            <MenuItem value="calendly">{PRESETS.calendly.name}</MenuItem>
+            <MenuItem value="custom">{PRESETS.custom.name}</MenuItem>
           </TextField>
         </Box>
 

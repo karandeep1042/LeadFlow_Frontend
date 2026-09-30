@@ -100,21 +100,6 @@ export const NotificationCenter = ({
           >
             Notifications
           </Typography>
-          {unreadCount > 0 && (
-            <Chip
-              label={`${unreadCount} new`}
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: '0.6875rem',
-                fontWeight: 800,
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
-                border: '1px solid #bfdbfe',
-                flexShrink: 0,
-              }}
-            />
-          )}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>

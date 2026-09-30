@@ -6,6 +6,7 @@ import {
 import { Eye, CheckCircle2, AlertTriangle, Clock, ExternalLink, FileText } from 'lucide-react';
 import { STAGE_META, getStageDisplayName } from '../../../utils/automationConstants';
 import DocumentMobileCard from './DocumentMobileCard';
+import { openDocumentInNewTab } from '../../../utils/documentUrl';
 
 export const DocumentTable = ({
   documents = [],
@@ -108,7 +109,24 @@ export const DocumentTable = ({
                   <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>{lead ? `${lead.city || 'Germany'} • €${Number(lead.loanAmount || 0).toLocaleString()}` : client?.email || ''}</Typography>
                 </TableCell>
                 <TableCell sx={{ py: 1.8 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{doc.title}</Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 700,
+                      cursor: doc.fileUrl ? 'pointer' : 'default',
+                      color: doc.fileUrl ? '#1e40af' : '#0f172a',
+                      '&:hover': doc.fileUrl ? { textDecoration: 'underline' } : {},
+                    }}
+                    onClick={() => {
+                      if (doc.fileUrl) {
+                        openDocumentInNewTab(doc.fileUrl);
+                      } else {
+                        onPreview(doc);
+                      }
+                    }}
+                  >
+                    {doc.title}
+                  </Typography>
                   <Typography variant="caption" sx={{ color: '#64748b' }}>{doc.fileName} • {(doc.fileSize / (1024 * 1024)).toFixed(2)} MB</Typography>
                 </TableCell>
                 <TableCell sx={{ py: 1.8 }}>
@@ -126,6 +144,17 @@ export const DocumentTable = ({
                         <Eye size={15} />
                       </IconButton>
                     </Tooltip>
+                    {doc.fileUrl && (
+                      <Tooltip title="Open in New Tab">
+                        <IconButton
+                          size="small"
+                          onClick={() => openDocumentInNewTab(doc.fileUrl)}
+                          sx={{ color: '#64748b', '&:hover': { color: '#2563eb' } }}
+                        >
+                          <ExternalLink size={15} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     {!isVerified && (
                       <Tooltip title={isLocked ? `Verification locked (Case in ${leadStage} stage)` : "Approve & Verify"}>
                         <span>

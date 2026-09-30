@@ -18,6 +18,25 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
+export const switchWorkspace = createAsyncThunk(
+  'auth/switchWorkspace',
+  async ({ brokerageId, role }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/auth/switch-workspace', {
+        brokerageId,
+        role,
+      });
+      if (response.data?.accessToken) {
+        setAccessToken(response.data.accessToken);
+      }
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to switch workspace.'
+      );
+    }
+  }
+);
 
 export const registerBrokerage = createAsyncThunk(
   'auth/registerBrokerage',
@@ -158,6 +177,23 @@ export const verifySignupCode = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || 'Invalid or expired verification code.'
+      );
+    }
+  }
+);
+
+export const setInitialPassword = createAsyncThunk(
+  'auth/setInitialPassword',
+  async ({ currentPassword, newPassword }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/auth/set-initial-password', {
+        currentPassword,
+        newPassword,
+      });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to update initial password.'
       );
     }
   }

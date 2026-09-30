@@ -9,6 +9,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import WebhookTester from './components/WebhookTester';
 import SourceFormDialog from './components/SourceFormDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
+import WebhookCreatedDialog from './components/WebhookCreatedDialog';
 import {
   fetchIngestionSources,
   createIngestionSource,
@@ -35,8 +36,13 @@ export const IntegrationsPage = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (sources.length > 0 && !selectedSourceId) {
-      setSelectedSourceId(sources[0]._id || sources[0].id);
+    if (sources && sources.length > 0) {
+      const exists = sources.some((s) => (s._id || s.id) === selectedSourceId);
+      if (!selectedSourceId || !exists) {
+        setSelectedSourceId(sources[0]._id || sources[0].id);
+      }
+    } else {
+      setSelectedSourceId('');
     }
   }, [sources, selectedSourceId]);
 
@@ -277,18 +283,6 @@ export const IntegrationsPage = () => {
         </Alert>
       </Snackbar>
 
-      {latestGeneratedKey && (
-        <Alert severity="info" sx={{ mb: 3, borderRadius: 2.5 }} onClose={() => dispatch(clearLatestGeneratedKey())}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>New Webhook Configured: {latestGeneratedKey.sourceName}</Typography>
-          <Typography variant="body2" sx={{ fontFamily: 'monospace', mt: 0.5 }}>URL: {latestGeneratedKey.webhookUrl}</Typography>
-          {latestGeneratedKey.rawApiKey && (
-            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-              Secret API Key: <strong>{latestGeneratedKey.rawApiKey}</strong>
-            </Typography>
-          )}
-        </Alert>
-      )}
-
       {/* Webhook Test Studio */}
       <WebhookTester sources={sources} selectedSourceId={selectedSourceId} onSelectSource={setSelectedSourceId} />
 
@@ -489,6 +483,11 @@ export const IntegrationsPage = () => {
       <SourceFormDialog open={openCreate} onClose={() => setOpenCreate(false)} initialData={null} onSubmit={handleCreateSubmit} submitting={submitting} />
       <SourceFormDialog open={Boolean(editingSource)} onClose={() => setEditingSource(null)} initialData={editingSource} onSubmit={handleEditSubmit} submitting={submitting} />
       <DeleteConfirmDialog open={Boolean(deletingSource)} onClose={() => setDeletingSource(null)} onConfirm={handleDeleteConfirm} source={deletingSource} deleting={submitting} />
+      <WebhookCreatedDialog
+        open={Boolean(latestGeneratedKey)}
+        webhookData={latestGeneratedKey}
+        onClose={() => dispatch(clearLatestGeneratedKey())}
+      />
     </DashboardLayout>
   );
 };

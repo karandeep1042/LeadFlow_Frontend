@@ -39,11 +39,27 @@ export const BrokerageAdminDashboard = () => {
     const unsub3 = subscribeToSocketEvent('lead:updated', () => {
       dispatch(fetchBrokerageDashboard());
     });
+    const unsub4 = subscribeToSocketEvent('task:created', () => {
+      dispatch(fetchBrokerageDashboard());
+    });
+    const unsub5 = subscribeToSocketEvent('task:updated', () => {
+      dispatch(fetchBrokerageDashboard());
+    });
+    const unsub6 = subscribeToSocketEvent('task:deleted', () => {
+      dispatch(fetchBrokerageDashboard());
+    });
+    const unsub7 = subscribeToSocketEvent('task:synced', () => {
+      dispatch(fetchBrokerageDashboard());
+    });
 
     return () => {
       unsub1();
       unsub2();
       unsub3();
+      unsub4();
+      unsub5();
+      unsub6();
+      unsub7();
     };
   }, [dispatch]);
 

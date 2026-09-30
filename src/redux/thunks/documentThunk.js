@@ -33,7 +33,24 @@ export const uploadDocument = createAsyncThunk(
   'document/uploadDocument',
   async (payload, thunkAPI) => {
     try {
-      const response = await axiosInstance.post('/api/documents/upload', payload);
+      let body = payload;
+      let headers = {};
+
+      if (payload instanceof FormData) {
+        body = payload;
+        headers['Content-Type'] = 'multipart/form-data';
+      } else if (payload && (payload.file instanceof File || payload.file instanceof Blob)) {
+        const formData = new FormData();
+        Object.keys(payload).forEach((key) => {
+          if (payload[key] !== undefined && payload[key] !== null) {
+            formData.append(key, payload[key]);
+          }
+        });
+        body = formData;
+        headers['Content-Type'] = 'multipart/form-data';
+      }
+
+      const response = await axiosInstance.post('/api/documents/upload', body, { headers });
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(

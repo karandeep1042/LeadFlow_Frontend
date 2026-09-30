@@ -21,7 +21,7 @@ export default function GlobalSettingsPage() {
             Administrator & Security
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
-            Manage superadmin profile, master security, and live infrastructure diagnostics (Database, Redis, and SMTP).
+            Manage superadmin profile, master security, and live infrastructure diagnostics (Redis and SMTP).
           </Typography>
         </Box>
 

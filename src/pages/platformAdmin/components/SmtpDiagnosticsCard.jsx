@@ -4,7 +4,7 @@ import {
   Box, Typography, Paper, Button, Alert, Chip, Stack,
 } from '@mui/material';
 import {
-  Database, Zap, Mail, RefreshCw, Sliders, Activity,
+  Zap, Mail, RefreshCw, Sliders, Activity,
 } from 'lucide-react';
 import {
   fetchPlatformHealth,
@@ -62,7 +62,6 @@ export default function SmtpDiagnosticsCard() {
     }
   };
 
-  const db = platformHealth?.database;
   const redis = platformHealth?.redis;
   const smtp = platformHealth?.smtp;
 
@@ -122,28 +121,15 @@ export default function SmtpDiagnosticsCard() {
         </Alert>
       )}
 
-      {/* 3 Infrastructure Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2.5 }}>
-        {renderCard(
-          'MongoDB Database', <Database size={18} />, '#059669', '#ecfdf5',
-          db?.status === 'connected' ? 'Connected' : 'Disconnected',
-          db?.status === 'connected' ? '#059669' : '#e11d48',
-          db?.status === 'connected' ? '#ecfdf5' : '#fff1f2',
-          [
-            { label: 'Host / DB', value: db?.host ? `${db.host}/${db.databaseName}` : '127.0.0.1/leadflow', mono: true },
-            { label: 'Collections', value: `${db?.collectionsCount || 0} collections` },
-            { label: 'Ping Latency', value: `${db?.latencyMs || 0} ms`, color: '#059669', bold: true },
-          ],
-          'database', 'Test Ping', '#059669', '#a7f3d0'
-        )}
-
+      {/* 2 Infrastructure Cards: Redis Cache & SMTP Relay */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
         {renderCard(
           'Redis Cache', <Zap size={18} />, '#d97706', '#fffbeb',
           redis?.status === 'connected' ? 'Connected' : 'In-Memory',
           redis?.status === 'connected' ? '#059669' : '#b45309',
           redis?.status === 'connected' ? '#ecfdf5' : '#fef3c7',
           [
-            { label: 'Cache Mode', value: redis?.mode || 'In-Memory Fallback' },
+            { label: 'Host Name', value: redis?.hostName || (redis?.status === 'connected' ? (redis?.host || 'Redis Active Instance') : 'In-Memory Fallback'), bold: true },
             { label: 'Keys Stored', value: `${redis?.keyCount || 0} keys` },
             { label: 'Ping Latency', value: `${redis?.latencyMs || 0} ms`, color: '#d97706', bold: true },
           ],

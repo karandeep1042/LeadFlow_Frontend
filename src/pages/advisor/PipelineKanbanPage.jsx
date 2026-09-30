@@ -15,11 +15,11 @@ import { fetchLeads, updateLeadStage } from '../../redux/thunks/leadThunk';
 import { clearLeadError, setSelectedLead } from '../../redux/slices/leadSlice';
 
 const PIPELINE_COLUMNS = [
-  { key: 'New', label: 'Stage 01: Ingestion', nextStage: 'Contacted', nextLabel: 'Contacted' },
-  { key: 'Contacted', label: 'Stage 02: Consultation', nextStage: 'Document Collection', nextLabel: 'Docs' },
-  { key: 'Document Collection', label: 'Stage 03: Documents', nextStage: 'Bank Submission', nextLabel: 'Bank Sub' },
-  { key: 'Bank Submission', label: 'Stage 04: Bank Submission', nextStage: 'Won', nextLabel: 'Approval' },
-  { key: 'Won', label: 'Stage 05: Loan Offer', nextStage: 'Lost', nextLabel: 'Closing' },
+  { key: 'New', label: 'Stage 01: Lead Ingestion', nextStage: 'Contacted', nextLabel: 'Initial Consultation' },
+  { key: 'Contacted', label: 'Stage 02: Initial Consultation', nextStage: 'Document Collection', nextLabel: 'Document Collection' },
+  { key: 'Document Collection', label: 'Stage 03: Document Collection', nextStage: 'Bank Submission', nextLabel: 'Bank Submission' },
+  { key: 'Bank Submission', label: 'Stage 04: Bank Submission', nextStage: 'Won', nextLabel: 'Loan Offer & Approval' },
+  { key: 'Won', label: 'Stage 05: Loan Offer & Approval', nextStage: 'Lost', nextLabel: 'Notary & Closing' },
   { key: 'Lost', label: 'Stage 06: Notary & Closing', nextStage: null, nextLabel: null },
 ];
 
@@ -147,7 +147,7 @@ export const PipelineKanbanPage = () => {
           </Button>
           {isAdmin && (
             <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setCreateModalOpen(true)} sx={{ borderRadius: 2, textTransform: 'none', backgroundColor: '#18181b', color: '#ffffff', px: 2.5 }}>
-              + Add Expat Lead
+              Add Expat Lead
             </Button>
           )}
         </Box>

@@ -4,6 +4,7 @@ import {
   Box, Typography, Chip, Button, IconButton, Grid, Paper, Tooltip,
 } from '@mui/material';
 import { X, CheckCircle2, AlertTriangle, Clock, FileText, RotateCw, ExternalLink, Lock } from 'lucide-react';
+import { openDocumentInNewTab } from '../../../utils/documentUrl';
 
 export const DocumentPreviewModal = ({
   open, onClose, document, onApprove, onOpenRejectModal, onReverify, onOpenLeadDossier,
@@ -18,6 +19,12 @@ export const DocumentPreviewModal = ({
   const currentStage = leadStageProp || lead?.stage;
   const locked = isStageLocked !== undefined ? isStageLocked : (currentStage ? currentStage !== 'Document Collection' : false);
 
+  const handleOpenDocumentInNewTab = () => {
+    if (document.fileUrl) {
+      openDocumentInNewTab(document.fileUrl);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: { xs: 2.5, sm: 3 }, m: { xs: 1, sm: 2 } } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', py: 1.5, px: { xs: 2, sm: 2.5 } }}>
@@ -30,7 +37,28 @@ export const DocumentPreviewModal = ({
             <Typography variant="caption" sx={{ color: '#64748b' }}>{document.fileName} • {(document.fileSize / (1024 * 1024)).toFixed(2)} MB</Typography>
           </Box>
         </Box>
-        <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {document.fileUrl && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<ExternalLink size={14} />}
+              onClick={handleOpenDocumentInNewTab}
+              sx={{
+                bgcolor: '#2563eb',
+                '&:hover': { bgcolor: '#1d4ed8' },
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                borderRadius: 2,
+                px: 1.75,
+              }}
+            >
+              Open in New Page
+            </Button>
+          )}
+          <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
+        </Box>
       </DialogTitle>
       <DialogContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
         {locked && (
@@ -61,23 +89,50 @@ export const DocumentPreviewModal = ({
                 <Chip size="small" label={isVerified ? 'Verified' : isRejected ? 'Revision Needed' : 'Checking...'} icon={isVerified ? <CheckCircle2 size={13} /> : isRejected ? <AlertTriangle size={13} /> : <Clock size={13} />} sx={{ fontSize: '0.7rem', fontWeight: 700 }} />
               </Box>
               <Box sx={{ p: 2, backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e3a8a' }}>{document.title}</Typography>
-                <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Applicant: {lead ? `${lead.firstName} ${lead.lastName}` : client?.name || 'N/A'}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e3a8a' }}>{document.title}</Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>File: {document.fileName}</Typography>
+                  </Box>
+                  {document.fileUrl && (
+                    <Tooltip title="View document in new tab">
+                      <IconButton
+                        size="small"
+                        onClick={handleOpenDocumentInNewTab}
+                        sx={{ color: '#2563eb', bgcolor: '#eff6ff', border: '1px solid #bfdbfe' }}
+                      >
+                        <ExternalLink size={14} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+                <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.75 }}>Applicant: {lead ? `${lead.firstName} ${lead.lastName}` : client?.name || 'N/A'}</Typography>
                 <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>Uploaded: {new Date(document.createdAt).toLocaleString()}</Typography>
                 {document.notes && <Typography variant="caption" sx={{ color: '#334155', display: 'block', mt: 1, p: 1, backgroundColor: '#f1f5f9', borderRadius: 1 }}>{document.notes}</Typography>}
                 {document.rejectionReason && <Typography variant="caption" sx={{ color: '#b91c1c', display: 'block', mt: 1, p: 1, backgroundColor: '#fef2f2', borderRadius: 1 }}>{document.rejectionReason}</Typography>}
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5, flexWrap: 'wrap', gap: 1 }}>
+                {document.fileUrl ? (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<ExternalLink size={14} />}
+                    onClick={handleOpenDocumentInNewTab}
+                    sx={{ textTransform: 'none', fontSize: '0.75rem', fontWeight: 700, borderColor: '#bfdbfe', color: '#2563eb' }}
+                  >
+                    View Original File
+                  </Button>
+                ) : <Box />}
                 <Tooltip title={locked ? `Re-verification locked in ${currentStage || 'current stage'}` : ""}>
                   <span>
                     <Button
                       size="small"
                       startIcon={<RotateCw size={14} />}
-                      onClick={() => onReverify(document._id)}
+                      onClick={() => onReverify && onReverify(document._id)}
                       disabled={actionLoading || locked}
                       sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                     >
-                      Re-run Check
+                      Re-verify Document
                     </Button>
                   </span>
                 </Tooltip>

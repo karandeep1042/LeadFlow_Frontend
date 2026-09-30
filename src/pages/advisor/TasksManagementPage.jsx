@@ -171,7 +171,12 @@ export const TasksManagementPage = () => {
     }
 
     // Smart Stage Task Gate: Check if current stage task is pending completion
-    const isAdvancingForward = actualPrevStage !== targetStage && !(actualPrevStage === 'Bank Submission' && targetStage === 'Document Collection');
+    // Claiming a lead (moving from Lead Ingestion to Initial Consultation) does NOT require completing any prior task
+    const isClaimingFromNew = actualPrevStage === 'New' && targetStage === 'Contacted';
+    const isAdvancingForward =
+      actualPrevStage !== targetStage &&
+      !isClaimingFromNew &&
+      !(actualPrevStage === 'Bank Submission' && targetStage === 'Document Collection');
     if (isAdvancingForward) {
       const pendingTask = tasks.find((t) => {
         const tLeadId = t.leadId?._id || t.leadId;

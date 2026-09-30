@@ -27,8 +27,10 @@ import {
   UserCheck,
   User,
   Radio,
+  Check,
+  ChevronDown,
 } from 'lucide-react';
-import { logoutUser } from '../../redux/thunks/authThunk';
+import { logoutUser, switchWorkspace } from '../../redux/thunks/authThunk';
 import {
   fetchNotifications,
   markNotificationAsRead,
@@ -92,6 +94,45 @@ export const Header = ({ onMobileNavToggle }) => {
   const handleDeleteNotification = (e, notifId) => {
     e.stopPropagation();
     dispatch(deleteNotification(notifId));
+  };
+
+  const handleSwitchWorkspace = async (ws) => {
+    handleProfileClose();
+    const isCurrent =
+      (ws.role === 'platform_admin' && role === 'platform_admin') ||
+      (ws.role === role &&
+        ws.brokerageId?.toString() ===
+          (user?.brokerageId?._id || user?.brokerageId)?.toString());
+
+    if (isCurrent) return;
+
+    const resultAction = await dispatch(
+      switchWorkspace({
+        brokerageId: ws.brokerageId,
+        role: ws.role,
+      })
+    );
+
+    if (switchWorkspace.fulfilled.match(resultAction)) {
+      if (ws.role === 'platform_admin') navigate(ROUTES.PLATFORM_ADMIN_TENANTS);
+      else if (ws.role === 'brokerage_admin') navigate(ROUTES.BROKERAGE_ADMIN_DASHBOARD);
+      else if (ws.role === 'advisor') navigate(ROUTES.ADVISOR_PIPELINE);
+      else if (ws.role === 'client') navigate(ROUTES.CLIENT_PORTAL);
+      else navigate(ROUTES.HOME);
+    }
+  };
+
+  const getWorkspaceRoleMeta = (r) => {
+    switch (r) {
+      case 'platform_admin':
+        return { label: 'Platform Admin', color: '#7c3aed', bg: '#f5f3ff', icon: Shield };
+      case 'brokerage_admin':
+        return { label: 'Brokerage Admin', color: '#2563eb', bg: '#eff6ff', icon: Building2 };
+      case 'advisor':
+        return { label: 'Mortgage Advisor', color: '#059669', bg: '#ecfdf5', icon: UserCheck };
+      default:
+        return { label: 'Client', color: '#d97706', bg: '#fffbeb', icon: User };
+    }
   };
 
   const getRoleBadge = () => {
@@ -241,10 +282,30 @@ export const Header = ({ onMobileNavToggle }) => {
             </Avatar>
           </IconButton>
 
-          <Menu anchorEl={profileAnchorEl} open={Boolean(profileAnchorEl)} onClose={handleProfileClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} PaperProps={{ sx: { width: 240, p: 1, borderRadius: 3, border: '1px solid #e2e8f0', mt: 1.5 } }}>
+          <Menu
+            anchorEl={profileAnchorEl}
+            open={Boolean(profileAnchorEl)}
+            onClose={handleProfileClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: {
+                width: { xs: 260, sm: 290 },
+                p: 1,
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 20px 40px -12px rgba(15, 23, 42, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.08)',
+                mt: 1.5,
+              },
+            }}
+          >
             <Box sx={{ px: 1.5, py: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a' }}>{user?.name || 'Administrator'}</Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', wordBreak: 'break-all' }}>{user?.email || 'admin@leadflow.de'}</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                {user?.name || 'User Account'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', wordBreak: 'break-all' }}>
+                {user?.email || ''}
+              </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.75, pt: 0.75, borderTop: '1px dashed #e2e8f0' }}>
                 <Building2 size={13} style={{ color: '#2563eb', flexShrink: 0 }} />
                 <Typography variant="caption" sx={{ color: '#2563eb', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -252,9 +313,85 @@ export const Header = ({ onMobileNavToggle }) => {
                 </Typography>
               </Box>
             </Box>
+
+            {user?.workspaces && user.workspaces.length > 1 && (
+              <>
+                <Divider sx={{ my: 0.75 }} />
+                <Box sx={{ px: 1.5, pt: 0.5, pb: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: '#94a3b8',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      fontSize: '0.65rem',
+                    }}
+                  >
+                    Switch Workspace ({user.workspaces.length})
+                  </Typography>
+                </Box>
+                <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
+                  {user.workspaces.map((ws, i) => {
+                    const isCurrent =
+                      (ws.role === 'platform_admin' && role === 'platform_admin') ||
+                      (ws.role === role &&
+                        ws.brokerageId?.toString() ===
+                          (user?.brokerageId?._id || user?.brokerageId)?.toString());
+                    const meta = getWorkspaceRoleMeta(ws.role);
+                    const WsIcon = meta.icon;
+
+                    return (
+                      <MenuItem
+                        key={i}
+                        onClick={() => handleSwitchWorkspace(ws)}
+                        selected={isCurrent}
+                        sx={{
+                          borderRadius: '8px',
+                          py: 0.75,
+                          px: 1.25,
+                          my: 0.25,
+                          backgroundColor: isCurrent ? '#eff6ff' : 'transparent',
+                          '&.Mui-selected': {
+                            backgroundColor: '#eff6ff',
+                            '&:hover': { backgroundColor: '#dbeafe' },
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 26, color: meta.color }}>
+                          <WsIcon size={15} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={ws.brokerageName}
+                          secondary={`${meta.label} • ${ws.city || 'Berlin'}`}
+                          primaryTypographyProps={{
+                            fontSize: '0.8125rem',
+                            fontWeight: isCurrent ? 800 : 600,
+                            color: isCurrent ? '#1e3a8a' : '#0f172a',
+                            noWrap: true,
+                          }}
+                          secondaryTypographyProps={{
+                            fontSize: '0.6875rem',
+                            fontWeight: 500,
+                            color: '#64748b',
+                            noWrap: true,
+                          }}
+                        />
+                        {isCurrent && (
+                          <Check size={14} style={{ color: '#2563eb', marginLeft: 6, flexShrink: 0 }} />
+                        )}
+                      </MenuItem>
+                    );
+                  })}
+                </Box>
+              </>
+            )}
+
             <Divider sx={{ my: 0.75 }} />
-            <MenuItem onClick={handleLogout} sx={{ color: '#ef4444', borderRadius: 2 }}>
-              <ListItemIcon sx={{ color: '#ef4444', minWidth: 32 }}><LogOut size={16} /></ListItemIcon>
+            <MenuItem onClick={handleLogout} sx={{ color: '#ef4444', borderRadius: '8px' }}>
+              <ListItemIcon sx={{ color: '#ef4444', minWidth: 32 }}>
+                <LogOut size={16} />
+              </ListItemIcon>
               <ListItemText primary="Sign Out" primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }} />
             </MenuItem>
           </Menu>
