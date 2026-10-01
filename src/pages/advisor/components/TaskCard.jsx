@@ -18,6 +18,7 @@ export const TaskCard = ({
   userRole = 'advisor',
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [toggling, setToggling] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
   const isAdmin = userRole === 'brokerage_admin' || userRole === 'admin';
 
@@ -32,6 +33,16 @@ export const TaskCard = ({
   const handleDelete = () => {
     handleMenuClose();
     onDeleteTask(task._id || task.id);
+  };
+
+  const handleCheckboxChange = async () => {
+    if (toggling) return;
+    setToggling(true);
+    try {
+      await onToggleComplete(task._id || task.id, !task.isCompleted);
+    } finally {
+      setToggling(false);
+    }
   };
 
   const now = new Date();
@@ -133,8 +144,9 @@ export const TaskCard = ({
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 1, sm: 1.5 } }}>
         <Checkbox
           checked={Boolean(task.isCompleted)}
-          onChange={() => onToggleComplete(task._id || task.id, !task.isCompleted)}
-          sx={{ p: 0.5, mt: 0.25, '&.Mui-checked': { color: '#10b981' } }}
+          disabled={toggling}
+          onChange={handleCheckboxChange}
+          sx={{ p: 0.5, mt: 0.25, '&.Mui-checked': { color: '#10b981' }, opacity: toggling ? 0.5 : 1 }}
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           {/* 1. Task Title & Admin Action Menu */}

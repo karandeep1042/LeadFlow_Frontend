@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, Box, Typography, Alert,
+  Button, TextField, Box, Typography, Alert, CircularProgress,
 } from '@mui/material';
 import { Ban, CheckCircle2 } from 'lucide-react';
 
 export function SuspendTenantModal({ isOpen, onClose, tenant, onConfirm }) {
   const [reason, setReason] = useState('Periodic subscription review and compliance verification.');
+  const [submitting, setSubmitting] = useState(false);
+
   if (!tenant) return null;
 
+  const handleConfirm = async () => {
+    setSubmitting(true);
+    try {
+      await onConfirm(reason);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
+    <Dialog open={isOpen} onClose={() => !submitting && onClose()} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
         <Box sx={{ width: 42, height: 42, borderRadius: 2.5, backgroundColor: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Ban size={22} />
@@ -37,13 +48,15 @@ export function SuspendTenantModal({ isOpen, onClose, tenant, onConfirm }) {
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={onClose} sx={{ fontWeight: 700, color: '#64748b' }}>Cancel</Button>
+        <Button onClick={onClose} disabled={submitting} sx={{ fontWeight: 700, color: '#64748b' }}>Cancel</Button>
         <Button
           variant="contained"
-          onClick={() => onConfirm(reason)}
+          disabled={submitting}
+          startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
+          onClick={handleConfirm}
           sx={{ fontWeight: 800, borderRadius: 2, px: 3, backgroundColor: '#dc2626', '&:hover': { backgroundColor: '#b91c1c' } }}
         >
-          Confirm Suspension
+          {submitting ? 'Suspending...' : 'Confirm Suspension'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -51,9 +64,21 @@ export function SuspendTenantModal({ isOpen, onClose, tenant, onConfirm }) {
 }
 
 export function ReactivateTenantModal({ isOpen, onClose, tenant, onConfirm }) {
+  const [submitting, setSubmitting] = useState(false);
+
   if (!tenant) return null;
+
+  const handleConfirm = async () => {
+    setSubmitting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
+    <Dialog open={isOpen} onClose={() => !submitting && onClose()} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
         <Box sx={{ width: 42, height: 42, borderRadius: 2.5, backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <CheckCircle2 size={22} />
@@ -69,13 +94,15 @@ export function ReactivateTenantModal({ isOpen, onClose, tenant, onConfirm }) {
         </Alert>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={onClose} sx={{ fontWeight: 700, color: '#64748b' }}>Cancel</Button>
+        <Button onClick={onClose} disabled={submitting} sx={{ fontWeight: 700, color: '#64748b' }}>Cancel</Button>
         <Button
           variant="contained"
-          onClick={onConfirm}
+          disabled={submitting}
+          startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
+          onClick={handleConfirm}
           sx={{ fontWeight: 800, borderRadius: 2, px: 3, backgroundColor: '#059669', '&:hover': { backgroundColor: '#047857' } }}
         >
-          Restore Workspace
+          {submitting ? 'Restoring...' : 'Restore Workspace'}
         </Button>
       </DialogActions>
     </Dialog>

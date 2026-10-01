@@ -26,6 +26,7 @@ export const TeamManagementPage = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
   const { advisors, loading } = useSelector((state) => state.team);
   const [submitting, setSubmitting] = useState(false);
+  const [togglingAdvisorId, setTogglingAdvisorId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [openInvite, setOpenInvite] = useState(false);
@@ -111,11 +112,13 @@ export const TeamManagementPage = () => {
   };
 
   const handleToggleStatus = async (advisor) => {
+    const advId = advisor.id || advisor._id;
     const nextStatus = advisor.status === 'active' ? 'suspended' : 'active';
+    setTogglingAdvisorId(advId);
     try {
       const resAction = await dispatch(
         toggleAdvisorStatus({
-          advisorId: advisor.id || advisor._id,
+          advisorId: advId,
           status: nextStatus,
         })
       );
@@ -133,6 +136,8 @@ export const TeamManagementPage = () => {
     } catch (err) {
       setErrorBanner(err.message || 'Failed to update advisor status.');
       setTimeout(() => setErrorBanner(''), 4000);
+    } finally {
+      setTogglingAdvisorId(null);
     }
   };
 
@@ -420,9 +425,10 @@ export const TeamManagementPage = () => {
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5 }}>
                           <Tooltip title={isActive ? 'Deactivate / Suspend Access' : 'Activate Access'}>
-                            <Box sx={{ display: 'inline-flex' }}>
+                            <Box sx={{ display: 'inline-flex', opacity: togglingAdvisorId === (adv.id || adv._id) ? 0.5 : 1 }}>
                               <ModernSwitch
                                 checked={isActive}
+                                disabled={togglingAdvisorId === (adv.id || adv._id)}
                                 onChange={() => handleToggleStatus(adv)}
                               />
                             </Box>
@@ -520,7 +526,11 @@ export const TeamManagementPage = () => {
                           fontSize: '0.65rem',
                         }}
                       />
-                      <ModernSwitch checked={isActive} onChange={() => handleToggleStatus(adv)} />
+                      <ModernSwitch
+                        checked={isActive}
+                        disabled={togglingAdvisorId === (adv.id || adv._id)}
+                        onChange={() => handleToggleStatus(adv)}
+                      />
                       <IconButton
                         size="small"
                         onClick={() => {

@@ -27,6 +27,7 @@ export const IntegrationsPage = () => {
   const [editingSource, setEditingSource] = useState(null);
   const [deletingSource, setDeletingSource] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [togglingSourceId, setTogglingSourceId] = useState(null);
   const [copiedId, setCopiedId] = useState('');
   const [banner, setBanner] = useState(null); // { open: boolean, message: string, severity: 'success' | 'info' | 'warning' | 'error' }
 
@@ -96,9 +97,15 @@ export const IntegrationsPage = () => {
     }
   };
 
-  const handleToggle = (source) => {
+  const handleToggle = async (source) => {
+    const srcId = source._id || source.id;
     const nextStatus = source.status === 'active' ? 'inactive' : 'active';
-    dispatch(toggleSourceStatus({ sourceId: source._id || source.id, status: nextStatus }));
+    setTogglingSourceId(srcId);
+    try {
+      await dispatch(toggleSourceStatus({ sourceId: srcId, status: nextStatus })).unwrap();
+    } finally {
+      setTogglingSourceId(null);
+    }
   };
 
   const activeCount = useMemo(() => {
@@ -466,9 +473,15 @@ export const IntegrationsPage = () => {
                         <Trash2 size={15} />
                       </IconButton>
                     </Tooltip>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pl: 0.75, borderLeft: '1px solid #e2e8f0' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pl: 0.75, borderLeft: '1px solid #e2e8f0', opacity: togglingSourceId === id ? 0.5 : 1 }}>
                       <Tooltip title={isActive ? 'Deactivate endpoint' : 'Activate endpoint'}>
-                        <Switch size="small" checked={isActive} onChange={() => handleToggle(src)} color="primary" />
+                        <Switch
+                          size="small"
+                          checked={isActive}
+                          disabled={togglingSourceId === id}
+                          onChange={() => handleToggle(src)}
+                          color="primary"
+                        />
                       </Tooltip>
                     </Box>
                   </Box>

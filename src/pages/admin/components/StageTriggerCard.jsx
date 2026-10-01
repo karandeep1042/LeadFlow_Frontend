@@ -3,7 +3,7 @@ import { Paper, Box, Typography, Button, Switch, Chip } from '@mui/material';
 import { Zap, Mail, CheckSquare, Edit3, Eye, Clock } from 'lucide-react';
 import { STAGE_META } from '../../../utils/automationConstants';
 
-export const StageTriggerCard = ({ trigger, onToggle, onEdit, onPreview }) => {
+export const StageTriggerCard = ({ trigger, isToggling = false, onToggle, onEdit, onPreview }) => {
   const meta = STAGE_META[trigger.stage] || {
     code: 'Stage',
     label: trigger.stage,
@@ -137,15 +137,17 @@ export const StageTriggerCard = ({ trigger, onToggle, onEdit, onPreview }) => {
             </Button>
             <Switch
               checked={isActive}
+              disabled={isToggling}
               onChange={() => onToggle(trigger)}
               color="primary"
             />
           </Box>
 
           {/* Mobile Switch Only in Header */}
-          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center' }}>
+          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', opacity: isToggling ? 0.5 : 1 }}>
             <Switch
               checked={isActive}
+              disabled={isToggling}
               onChange={() => onToggle(trigger)}
               color="primary"
               size="small"

@@ -14,6 +14,11 @@ import {
   fetchPlatformHealth,
   updateSuperAdminProfile,
   updateSuperAdminPassword,
+  fetchEmailQueueItems,
+  flushEmailQueueThunk,
+  retryEmailQueueJob,
+  retryAllEmailQueueJobs,
+  deleteEmailQueueJob,
 } from '../thunks/tenantThunk';
 
 const initialState = {
@@ -40,6 +45,10 @@ const initialState = {
   selectedTemplate: null,
   smtpStatus: null,
   platformHealth: null,
+  emailQueue: {
+    counts: { pending: 0, processing: 0, sent: 0, failed: 0, total: 0 },
+    items: [],
+  },
   loading: false,
   templateLoading: false,
   actionLoading: false,
@@ -199,6 +208,35 @@ const tenantSlice = createSlice({
       // Fetch Platform Health
       .addCase(fetchPlatformHealth.fulfilled, (state, action) => {
         state.platformHealth = action.payload.data;
+        if (action.payload.data?.emailQueue) {
+          state.emailQueue = {
+            ...state.emailQueue,
+            counts: action.payload.data.emailQueue.counts || state.emailQueue.counts,
+            items: action.payload.data.emailQueue.recentItems || state.emailQueue.items,
+          };
+        }
+      })
+
+      // Fetch Email Queue Items
+      .addCase(fetchEmailQueueItems.fulfilled, (state, action) => {
+        if (action.payload?.data) {
+          state.emailQueue = action.payload.data;
+        }
+      })
+
+      // Flush Email Queue
+      .addCase(flushEmailQueueThunk.fulfilled, (state, action) => {
+        if (action.payload?.data) {
+          state.emailQueue = action.payload.data;
+        }
+      })
+
+      // Delete Email Queue Job
+      .addCase(deleteEmailQueueJob.fulfilled, (state, action) => {
+        const jobId = action.payload?.jobId;
+        if (jobId) {
+          state.emailQueue.items = state.emailQueue.items.filter((item) => item._id !== jobId);
+        }
       });
   },
 });

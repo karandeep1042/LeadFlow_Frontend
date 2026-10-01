@@ -19,6 +19,9 @@ export const NotificationCenter = ({
   notifications = [],
   unreadCount = 0,
   loading = false,
+  markingAllRead = false,
+  clearingAll = false,
+  deletingNotifId = null,
   activeTab = 0,
   setActiveTab,
   onNotificationClick,
@@ -107,7 +110,8 @@ export const NotificationCenter = ({
             <Button
               size="small"
               onClick={onMarkAllRead}
-              startIcon={<CheckCheck size={13} />}
+              disabled={markingAllRead}
+              startIcon={markingAllRead ? <CircularProgress size={12} color="inherit" /> : <CheckCheck size={13} />}
               sx={{
                 fontSize: '0.72rem',
                 fontWeight: 700,
@@ -122,7 +126,7 @@ export const NotificationCenter = ({
                 '&:hover': { backgroundColor: '#dbeafe' },
               }}
             >
-              Mark all read
+              {markingAllRead ? 'Marking...' : 'Mark all read'}
             </Button>
           )}
 
@@ -131,7 +135,8 @@ export const NotificationCenter = ({
               <Button
                 size="small"
                 onClick={onClearAll}
-                startIcon={<Trash2 size={12} />}
+                disabled={clearingAll}
+                startIcon={clearingAll ? <CircularProgress size={12} color="inherit" /> : <Trash2 size={12} />}
                 sx={{
                   fontSize: '0.7rem',
                   fontWeight: 600,
@@ -148,7 +153,7 @@ export const NotificationCenter = ({
                   },
                 }}
               >
-                Clear all
+                {clearingAll ? 'Clearing...' : 'Clear all'}
               </Button>
             </Tooltip>
           )}
@@ -273,6 +278,7 @@ export const NotificationCenter = ({
             <NotificationItem
               key={notif._id}
               notif={notif}
+              isDeleting={deletingNotifId === notif._id}
               onClick={onNotificationClick}
               onDelete={onDeleteNotification}
             />

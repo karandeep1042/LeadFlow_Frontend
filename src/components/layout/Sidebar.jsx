@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Box, Drawer, Typography, List, ListItem, ListItemButton,
   ListItemIcon, ListItemText, Chip, Avatar, IconButton, Divider, Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import { Building2, LogOut } from 'lucide-react';
 import leadflowLogoWithoutLabel from '../../assets/leadflow-logo-without-label.png';
@@ -19,12 +20,17 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user, role } = useSelector((state) => state.auth);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const sections = useMemo(() => getRoleNavigation(role), [role]);
 
   const handleLogout = async () => {
-    await dispatch(logoutUser());
-    navigate(ROUTES.SIGNIN);
+    setIsLoggingOut(true);
+    try {
+      await dispatch(logoutUser());
+    } finally {
+      navigate(ROUTES.SIGNIN);
+    }
   };
 
   const handleItemClick = () => {
@@ -124,8 +130,15 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
             </Typography>
           </Box>
         </Box>
-        <Tooltip title="Sign Out">
-          <IconButton onClick={handleLogout} size="small" sx={{ color: '#64748b' }}><LogOut size={16} /></IconButton>
+        <Tooltip title={isLoggingOut ? 'Signing out...' : 'Sign Out'}>
+          <IconButton
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            size="small"
+            sx={{ color: '#64748b', '&:hover': { color: '#ef4444', backgroundColor: '#fee2e2' } }}
+          >
+            {isLoggingOut ? <CircularProgress size={16} color="inherit" /> : <LogOut size={16} />}
+          </IconButton>
         </Tooltip>
       </Box>
     </Box>

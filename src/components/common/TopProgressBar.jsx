@@ -4,18 +4,26 @@ import { Box } from '@mui/material';
 
 // Global Event Emitter for Instant YouTube-style Progress Bar
 const listeners = new Set();
+let activeRequestsCount = 0;
 
 export const startNavigationProgress = () => {
-  listeners.forEach((fn) => fn('start'));
+  activeRequestsCount += 1;
+  listeners.forEach((fn) => fn('start', activeRequestsCount));
 };
 
 export const finishNavigationProgress = () => {
-  listeners.forEach((fn) => fn('finish'));
+  activeRequestsCount = Math.max(0, activeRequestsCount - 1);
+  listeners.forEach((fn) => fn('finish', activeRequestsCount));
+};
+
+export const forceCompleteProgress = () => {
+  activeRequestsCount = 0;
+  listeners.forEach((fn) => fn('force_complete', 0));
 };
 
 /**
  * YouTube / GitHub style top progress bar that animates from left to right
- * on route transitions and settles smoothly with a glowing neon trailing edge.
+ * on route transitions and background API calls, settling smoothly with a glowing neon trailing edge.
  */
 export const TopProgressBar = () => {
   const location = useLocation();
@@ -33,17 +41,22 @@ export const TopProgressBar = () => {
     clearAllTimeouts();
     setVisible(true);
     setOpacity(1);
-    setProgress(28);
+    setProgress((prev) => (prev > 0 && prev < 85 ? prev : 28));
 
     const t1 = setTimeout(() => {
-      setProgress(58);
-    }, 80);
+      setProgress((prev) => (prev < 65 ? 65 : prev));
+    }, 100);
 
     const t2 = setTimeout(() => {
-      setProgress(84);
-    }, 180);
+      setProgress((prev) => (prev < 88 ? 88 : prev));
+    }, 250);
 
-    timeoutsRef.current = [t1, t2];
+    // Auto-complete safety timeout (12s)
+    const t3 = setTimeout(() => {
+      completeProgress();
+    }, 12000);
+
+    timeoutsRef.current = [t1, t2, t3];
   };
 
   const completeProgress = () => {
@@ -64,12 +77,16 @@ export const TopProgressBar = () => {
     timeoutsRef.current = [t1, t2];
   };
 
-  // Listen to manual triggers (e.g. on sidebar click before React commit)
+  // Listen to manual and Axios triggers
   useEffect(() => {
-    const handler = (type) => {
+    const handler = (type, count) => {
       if (type === 'start') {
         startProgress();
       } else if (type === 'finish') {
+        if (count === 0) {
+          completeProgress();
+        }
+      } else if (type === 'force_complete') {
         completeProgress();
       }
     };
@@ -82,6 +99,7 @@ export const TopProgressBar = () => {
 
   // On location path/query change, complete progress smoothly
   useEffect(() => {
+    activeRequestsCount = 0;
     completeProgress();
   }, [location.pathname, location.search]);
 
@@ -136,3 +154,4 @@ export const TopProgressBar = () => {
 };
 
 export default TopProgressBar;
+

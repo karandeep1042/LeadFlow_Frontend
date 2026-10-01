@@ -28,6 +28,7 @@ export const AutomationsPage = () => {
   const [previewTrigger, setPreviewTrigger] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [togglingTriggerId, setTogglingTriggerId] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -37,11 +38,13 @@ export const AutomationsPage = () => {
   }, [dispatch]);
 
   const handleToggleStatus = async (trigger) => {
+    const triggerId = trigger._id || trigger.id;
     const newStatus = !(trigger.isActive !== undefined ? trigger.isActive : true);
+    setTogglingTriggerId(triggerId);
     try {
       await dispatch(
         toggleTriggerStatus({
-          triggerId: trigger._id || trigger.id,
+          triggerId: triggerId,
           isActive: newStatus,
         })
       ).unwrap();
@@ -50,6 +53,8 @@ export const AutomationsPage = () => {
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       setErrorMsg(err?.message || err?.error || 'Failed to toggle trigger status.');
+    } finally {
+      setTogglingTriggerId(null);
     }
   };
 
@@ -236,6 +241,7 @@ export const AutomationsPage = () => {
               <StageTriggerCard
                 key={trigger._id || trigger.id || trigger.stage}
                 trigger={trigger}
+                isToggling={togglingTriggerId === (trigger._id || trigger.id)}
                 onToggle={handleToggleStatus}
                 onEdit={(trig) => setSelectedTrigger(trig)}
                 onPreview={(trig) => setPreviewTrigger(trig)}

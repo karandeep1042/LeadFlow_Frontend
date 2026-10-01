@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchClients, toggleClientStatus, fetchClientPortalOverview } from '../thunks/clientThunk';
+import { uploadDocument } from '../thunks/documentThunk';
 
 const initialState = {
   clients: [],
@@ -154,6 +155,24 @@ const clientSlice = createSlice({
       .addCase(fetchClientPortalOverview.rejected, (state, action) => {
         state.portalLoading = false;
         state.portalError = action.payload;
+      })
+
+      // Upload Document sync to portalData
+      .addCase(uploadDocument.fulfilled, (state, action) => {
+        const uploadedDoc = action.payload?.data || action.payload;
+        if (!state.portalData || !uploadedDoc) return;
+        const docs = [...(state.portalData.documents || [])];
+        const index = docs.findIndex(
+          (d) =>
+            (uploadedDoc._id && String(d._id) === String(uploadedDoc._id)) ||
+            (uploadedDoc.docType && d.docType === uploadedDoc.docType)
+        );
+        if (index !== -1) {
+          docs[index] = { ...docs[index], ...uploadedDoc };
+        } else {
+          docs.unshift(uploadedDoc);
+        }
+        state.portalData.documents = docs;
       })
 
       // Toggle Client Status

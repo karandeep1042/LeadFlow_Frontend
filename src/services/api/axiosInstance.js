@@ -4,6 +4,10 @@ import {
   setAccessToken,
   clearAccessToken,
 } from './tokenStorage';
+import {
+  startNavigationProgress,
+  finishNavigationProgress,
+} from '../../components/common/TopProgressBar';
 
 let onUnauthorizedCallback = null;
 
@@ -17,6 +21,7 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use((config) => {
+  startNavigationProgress();
   const token = getAccessToken();
 
   if (token) {
@@ -24,6 +29,9 @@ axiosInstance.interceptors.request.use((config) => {
   }
 
   return config;
+}, (error) => {
+  finishNavigationProgress();
+  return Promise.reject(error);
 });
 
 let isRefreshing = false;
@@ -52,8 +60,12 @@ const AUTH_BYPASS_ENDPOINTS = [
 ];
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    finishNavigationProgress();
+    return response;
+  },
   async (error) => {
+    finishNavigationProgress();
     const originalRequest = error.config;
     const requestUrl = originalRequest?.url || '';
 
@@ -128,5 +140,6 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
+
 
 

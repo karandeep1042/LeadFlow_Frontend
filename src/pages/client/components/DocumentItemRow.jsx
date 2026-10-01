@@ -78,8 +78,25 @@ const DocumentItemRow = ({
     );
   };
 
-  const borderColor = status === 'rejected' ? '#fca5a5' : status === 'verified' ? '#a7f3d0' : status === 'processing' ? '#bfdbfe' : '#e2e8f0';
-  const borderLeftAccent = status === 'rejected' ? '4px solid #ef4444' : status === 'verified' ? '4px solid #10b981' : status === 'processing' ? '4px solid #3b82f6' : '4px solid #cbd5e1';
+  const borderColor = uploading
+    ? '#93c5fd'
+    : status === 'rejected'
+    ? '#fca5a5'
+    : status === 'verified'
+    ? '#a7f3d0'
+    : status === 'processing'
+    ? '#bfdbfe'
+    : '#e2e8f0';
+
+  const borderLeftAccent = uploading
+    ? '4px solid #3b82f6'
+    : status === 'rejected'
+    ? '4px solid #ef4444'
+    : status === 'verified'
+    ? '4px solid #10b981'
+    : status === 'processing'
+    ? '4px solid #3b82f6'
+    : '4px solid #cbd5e1';
 
   // If revision is requested, ONLY the rejected item is allowed to upload replacement; all other items are locked
   const isLockedForRevision = hasRevisionRequested && status !== 'rejected';
@@ -90,6 +107,37 @@ const DocumentItemRow = ({
     const btnFlex = isMobile ? 1 : 'none';
     const btnWidth = isMobile ? '100%' : 'auto';
 
+    if (uploading) {
+      return (
+        <Button
+          variant="contained"
+          size="small"
+          disabled
+          startIcon={<CircularProgress size={13} color="inherit" />}
+          sx={{
+            bgcolor: '#93c5fd !important',
+            color: '#ffffff !important',
+            textTransform: 'none',
+            fontWeight: 700,
+            borderRadius: 2,
+            px: 2.25,
+            whiteSpace: 'nowrap',
+            height: btnHeight,
+            flex: btnFlex,
+            width: btnWidth,
+            fontSize: '0.84rem',
+            boxShadow: 'none',
+            '&.Mui-disabled': {
+              bgcolor: '#93c5fd !important',
+              color: '#ffffff !important',
+            },
+          }}
+        >
+          {status === 'verified' ? 'Replacing...' : 'Uploading...'}
+        </Button>
+      );
+    }
+
     if (status === 'rejected') {
       return (
         <Button
@@ -98,7 +146,7 @@ const DocumentItemRow = ({
           size="small"
           startIcon={<RefreshCw size={15} />}
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          disabled={isVaultLocked}
           sx={{
             textTransform: 'none',
             fontWeight: 700,

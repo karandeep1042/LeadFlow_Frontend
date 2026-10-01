@@ -254,3 +254,78 @@ export const updateSuperAdminPassword = createAsyncThunk(
   }
 );
 
+// 17. Fetch Email Queue Items & DLQ Metrics
+export const fetchEmailQueueItems = createAsyncThunk(
+  'tenant/fetchEmailQueueItems',
+  async (params = {}, thunkAPI) => {
+    try {
+      const response = await axiosInstance.get('/api/platform-admin/diagnostics/email-queue', { params });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch email queue items.'
+      );
+    }
+  }
+);
+
+// 18. Flush Email Queue Worker
+export const flushEmailQueueThunk = createAsyncThunk(
+  'tenant/flushEmailQueue',
+  async (_, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/platform-admin/diagnostics/email-queue/flush');
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to flush email queue.'
+      );
+    }
+  }
+);
+
+// 19. Retry Single Failed Email Job
+export const retryEmailQueueJob = createAsyncThunk(
+  'tenant/retryEmailQueueJob',
+  async (jobId, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post(`/api/platform-admin/diagnostics/email-queue/retry/${jobId}`);
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to retry email job.'
+      );
+    }
+  }
+);
+
+// 20. Bulk Retry All Dead Letter Queue (DLQ) Failed Emails
+export const retryAllEmailQueueJobs = createAsyncThunk(
+  'tenant/retryAllEmailQueueJobs',
+  async (_, thunkAPI) => {
+    try {
+      const response = await axiosInstance.post('/api/platform-admin/diagnostics/email-queue/retry-all');
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to retry all DLQ emails.'
+      );
+    }
+  }
+);
+
+// 21. Delete Email Queue Job
+export const deleteEmailQueueJob = createAsyncThunk(
+  'tenant/deleteEmailQueueJob',
+  async (jobId, thunkAPI) => {
+    try {
+      const response = await axiosInstance.delete(`/api/platform-admin/diagnostics/email-queue/${jobId}`);
+      return { ...response.data, jobId };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to delete email queue item.'
+      );
+    }
+  }
+);
+

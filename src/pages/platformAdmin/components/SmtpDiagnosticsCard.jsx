@@ -2,20 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box, Typography, Paper, Button, Alert, Chip, Stack,
+  Table, TableHead, TableBody, TableRow, TableCell, Tooltip, IconButton,
+  Dialog, DialogTitle, DialogContent, DialogActions, Tabs, Tab,
 } from '@mui/material';
 import {
-  Zap, Mail, RefreshCw, Sliders, Activity,
+  Zap, Mail, RefreshCw, Sliders, Activity, RotateCcw,
+  Trash2, AlertTriangle, CheckCircle, Layers,
 } from 'lucide-react';
 import {
   fetchPlatformHealth,
   testPlatformService,
   updatePlatformCredentials,
+  fetchEmailQueueItems,
+  flushEmailQueueThunk,
+  retryEmailQueueJob,
+  retryAllEmailQueueJobs,
+  deleteEmailQueueJob,
 } from '../../../redux/thunks/tenantThunk';
 import ServiceCredentialsModal from './ServiceCredentialsModal';
+import EmailQueueModal from './EmailQueueModal';
 
 export default function SmtpDiagnosticsCard() {
   const dispatch = useDispatch();
   const platformHealth = useSelector((state) => state.tenant?.platformHealth);
+  const emailQueue = useSelector((state) => state.tenant?.emailQueue);
 
   const [loading, setLoading] = useState(false);
   const [testingService, setTestingService] = useState(null);
@@ -23,13 +33,21 @@ export default function SmtpDiagnosticsCard() {
   const [configModal, setConfigModal] = useState({ open: false, service: null });
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Email Queue & DLQ Modal State
+  const [queueModalOpen, setQueueModalOpen] = useState(false);
+  const [queueFilterStatus, setQueueFilterStatus] = useState('all');
+  const [queueActionLoading, setQueueActionLoading] = useState(false);
+
   useEffect(() => {
     loadHealth();
   }, [dispatch]);
 
   const loadHealth = async () => {
     setLoading(true);
-    await dispatch(fetchPlatformHealth());
+    await Promise.all([
+      dispatch(fetchPlatformHealth()),
+      dispatch(fetchEmailQueueItems({ limit: 50 })),
+    ]);
     setLoading(false);
   };
 
@@ -62,11 +80,71 @@ export default function SmtpDiagnosticsCard() {
     }
   };
 
+  const handleFlushQueue = async () => {
+    setQueueActionLoading(true);
+    const res = await dispatch(flushEmailQueueThunk());
+    setQueueActionLoading(false);
+    if (flushEmailQueueThunk.fulfilled.match(res)) {
+      setDiagnosticNotice({ success: true, message: res.payload?.message || 'Email queue flush triggered.' });
+      dispatch(fetchEmailQueueItems({ limit: 50, status: queueFilterStatus === 'all' ? undefined : queueFilterStatus }));
+      dispatch(fetchPlatformHealth());
+    } else {
+      setDiagnosticNotice({ success: false, message: res.payload || 'Failed to flush email queue.' });
+    }
+  };
+
+  const handleRetryJob = async (jobId) => {
+    setQueueActionLoading(true);
+    const res = await dispatch(retryEmailQueueJob(jobId));
+    setQueueActionLoading(false);
+    if (retryEmailQueueJob.fulfilled.match(res)) {
+      setDiagnosticNotice({ success: true, message: res.payload?.message || 'Job scheduled for immediate retry.' });
+      dispatch(fetchEmailQueueItems({ limit: 50, status: queueFilterStatus === 'all' ? undefined : queueFilterStatus }));
+      dispatch(fetchPlatformHealth());
+    } else {
+      setDiagnosticNotice({ success: false, message: res.payload || 'Failed to retry email job.' });
+    }
+  };
+
+  const handleRetryAllFailed = async () => {
+    setQueueActionLoading(true);
+    const res = await dispatch(retryAllEmailQueueJobs());
+    setQueueActionLoading(false);
+    if (retryAllEmailQueueJobs.fulfilled.match(res)) {
+      setDiagnosticNotice({ success: true, message: res.payload?.message || 'All failed emails scheduled for retry.' });
+      dispatch(fetchEmailQueueItems({ limit: 50, status: queueFilterStatus === 'all' ? undefined : queueFilterStatus }));
+      dispatch(fetchPlatformHealth());
+    } else {
+      setDiagnosticNotice({ success: false, message: res.payload || 'Failed to retry DLQ jobs.' });
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm('Are you sure you want to delete this queue item?')) return;
+    setQueueActionLoading(true);
+    const res = await dispatch(deleteEmailQueueJob(jobId));
+    setQueueActionLoading(false);
+    if (deleteEmailQueueJob.fulfilled.match(res)) {
+      setDiagnosticNotice({ success: true, message: 'Queue item deleted.' });
+      dispatch(fetchEmailQueueItems({ limit: 50, status: queueFilterStatus === 'all' ? undefined : queueFilterStatus }));
+      dispatch(fetchPlatformHealth());
+    } else {
+      setDiagnosticNotice({ success: false, message: res.payload || 'Failed to delete job.' });
+    }
+  };
+
+  const handleFilterChange = (_, newStatus) => {
+    setQueueFilterStatus(newStatus);
+    dispatch(fetchEmailQueueItems({ limit: 50, status: newStatus === 'all' ? undefined : newStatus }));
+  };
+
   const redis = platformHealth?.redis;
   const smtp = platformHealth?.smtp;
+  const queueCounts = emailQueue?.counts || platformHealth?.emailQueue?.counts || { pending: 0, processing: 0, sent: 0, failed: 0, total: 0 };
+  const queueItems = emailQueue?.items || platformHealth?.emailQueue?.recentItems || [];
+  const failedCount = queueCounts.failed || 0;
 
-
-  const renderCard = (title, icon, color, bg, chipLabel, chipColor, chipBg, metrics, testKey, testLabel, testColor, testBorder) => (
+  const renderCard = (title, icon, color, bg, chipLabel, chipColor, chipBg, metrics, testKey, testLabel, testColor, testBorder, onConfigClick) => (
     <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2.5, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 2 }}>
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -86,11 +164,26 @@ export default function SmtpDiagnosticsCard() {
         </Stack>
       </Box>
       <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid #f1f5f9' }}>
-        <Button size="small" variant="outlined" fullWidth onClick={() => handleTestService(testKey)} disabled={testingService === testKey} startIcon={<RefreshCw size={14} className={testingService === testKey ? 'animate-spin' : ''} />} sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', textTransform: 'none', color: testColor, borderColor: testBorder }}>
+        <Button
+          size="small"
+          variant="outlined"
+          fullWidth
+          onClick={() => (testKey === 'queue' ? handleFlushQueue() : handleTestService(testKey))}
+          disabled={testingService === testKey || (testKey === 'queue' && queueActionLoading)}
+          startIcon={<RefreshCw size={14} className={(testingService === testKey || (testKey === 'queue' && queueActionLoading)) ? 'animate-spin' : ''} />}
+          sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', textTransform: 'none', color: testColor, borderColor: testBorder }}
+        >
           {testingService === testKey ? 'Testing...' : testLabel}
         </Button>
-        <Button size="small" variant="contained" fullWidth onClick={() => setConfigModal({ open: true, service: testKey })} startIcon={<Sliders size={14} />} sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', textTransform: 'none', backgroundColor: '#0f172a' }}>
-          Config
+        <Button
+          size="small"
+          variant="contained"
+          fullWidth
+          onClick={onConfigClick || (() => setConfigModal({ open: true, service: testKey }))}
+          startIcon={<Sliders size={14} />}
+          sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', textTransform: 'none', backgroundColor: '#0f172a' }}
+        >
+          {testKey === 'queue' ? 'Inspect' : 'Config'}
         </Button>
       </Box>
     </Paper>
@@ -121,8 +214,8 @@ export default function SmtpDiagnosticsCard() {
         </Alert>
       )}
 
-      {/* 2 Infrastructure Cards: Redis Cache & SMTP Relay */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+      {/* 3 Infrastructure Cards: Redis Cache, SMTP Relay & Email Retry Queue (DLQ) */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2.5 }}>
         {renderCard(
           'Redis Cache', <Zap size={18} />, '#d97706', '#fffbeb',
           redis?.status === 'connected' ? 'Connected' : 'In-Memory',
@@ -148,7 +241,36 @@ export default function SmtpDiagnosticsCard() {
           ],
           'smtp', 'Test SMTP', '#4f46e5', '#c7d2fe'
         )}
+
+        {renderCard(
+          'Email Queue & DLQ', <Layers size={18} />, '#0284c7', '#f0f9ff',
+          failedCount > 0 ? `${failedCount} DLQ Alert` : (queueCounts.pending > 0 ? `${queueCounts.pending} Pending` : 'All Dispatched'),
+          failedCount > 0 ? '#b91c1c' : (queueCounts.pending > 0 ? '#d97706' : '#059669'),
+          failedCount > 0 ? '#fef2f2' : (queueCounts.pending > 0 ? '#fffbeb' : '#ecfdf5'),
+          [
+            { label: 'Pending Retries', value: `${queueCounts.pending || 0} jobs`, bold: true, color: queueCounts.pending > 0 ? '#d97706' : '#64748b' },
+            { label: 'Dispatched (Sent)', value: `${queueCounts.sent || 0} emails`, color: '#059669' },
+            { label: 'Dead Letter Queue', value: `${failedCount} failed`, color: failedCount > 0 ? '#b91c1c' : '#64748b', bold: true },
+          ],
+          'queue', 'Flush Queue', '#0284c7', '#bae6fd',
+          () => setQueueModalOpen(true)
+        )}
       </Box>
+
+      {/* Email Queue & Dead Letter Queue Modal */}
+      <EmailQueueModal
+        open={queueModalOpen}
+        onClose={() => setQueueModalOpen(false)}
+        queueCounts={queueCounts}
+        queueItems={queueItems}
+        filterStatus={queueFilterStatus}
+        onFilterChange={handleFilterChange}
+        onFlush={handleFlushQueue}
+        onRetryJob={handleRetryJob}
+        onRetryAll={handleRetryAllFailed}
+        onDeleteJob={handleDeleteJob}
+        loading={queueActionLoading}
+      />
 
       {/* Credentials Modal */}
       <ServiceCredentialsModal

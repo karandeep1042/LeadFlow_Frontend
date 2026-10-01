@@ -17,6 +17,8 @@ import {
   Divider,
   Paper,
   Tooltip,
+  Backdrop,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -55,6 +57,11 @@ export const Header = ({ onMobileNavToggle }) => {
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSwitchingWorkspace, setIsSwitchingWorkspace] = useState(false);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [deletingNotifId, setDeletingNotifId] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -70,8 +77,12 @@ export const Header = ({ onMobileNavToggle }) => {
 
   const handleLogout = async () => {
     handleProfileClose();
-    await dispatch(logoutUser());
-    navigate(ROUTES.SIGNIN);
+    setIsLoggingOut(true);
+    try {
+      await dispatch(logoutUser());
+    } finally {
+      navigate(ROUTES.SIGNIN);
+    }
   };
 
   const handleNotificationClick = (notif) => {
@@ -84,17 +95,32 @@ export const Header = ({ onMobileNavToggle }) => {
     }
   };
 
-  const handleMarkAllRead = () => {
-    dispatch(markAllNotificationsAsRead());
+  const handleMarkAllRead = async () => {
+    setMarkingAllRead(true);
+    try {
+      await dispatch(markAllNotificationsAsRead());
+    } finally {
+      setMarkingAllRead(false);
+    }
   };
 
-  const handleClearAll = () => {
-    dispatch(clearAllNotifications());
+  const handleClearAll = async () => {
+    setClearingAll(true);
+    try {
+      await dispatch(clearAllNotifications());
+    } finally {
+      setClearingAll(false);
+    }
   };
 
-  const handleDeleteNotification = (e, notifId) => {
+  const handleDeleteNotification = async (e, notifId) => {
     e.stopPropagation();
-    dispatch(deleteNotification(notifId));
+    setDeletingNotifId(notifId);
+    try {
+      await dispatch(deleteNotification(notifId));
+    } finally {
+      setDeletingNotifId(null);
+    }
   };
 
   const handleSwitchWorkspace = async (ws) => {
@@ -107,19 +133,24 @@ export const Header = ({ onMobileNavToggle }) => {
 
     if (isCurrent) return;
 
-    const resultAction = await dispatch(
-      switchWorkspace({
-        brokerageId: ws.brokerageId,
-        role: ws.role,
-      })
-    );
+    setIsSwitchingWorkspace(true);
+    try {
+      const resultAction = await dispatch(
+        switchWorkspace({
+          brokerageId: ws.brokerageId,
+          role: ws.role,
+        })
+      );
 
-    if (switchWorkspace.fulfilled.match(resultAction)) {
-      if (ws.role === 'platform_admin') navigate(ROUTES.PLATFORM_ADMIN_TENANTS);
-      else if (ws.role === 'brokerage_admin') navigate(ROUTES.BROKERAGE_ADMIN_DASHBOARD);
-      else if (ws.role === 'advisor') navigate(ROUTES.ADVISOR_PIPELINE);
-      else if (ws.role === 'client') navigate(ROUTES.CLIENT_PORTAL);
-      else navigate(ROUTES.HOME);
+      if (switchWorkspace.fulfilled.match(resultAction)) {
+        if (ws.role === 'platform_admin') navigate(ROUTES.PLATFORM_ADMIN_TENANTS);
+        else if (ws.role === 'brokerage_admin') navigate(ROUTES.BROKERAGE_ADMIN_DASHBOARD);
+        else if (ws.role === 'advisor') navigate(ROUTES.ADVISOR_PIPELINE);
+        else if (ws.role === 'client') navigate(ROUTES.CLIENT_PORTAL);
+        else navigate(ROUTES.HOME);
+      }
+    } finally {
+      setIsSwitchingWorkspace(false);
     }
   };
 
@@ -286,6 +317,9 @@ export const Header = ({ onMobileNavToggle }) => {
             notifications={notifications}
             unreadCount={unreadCount}
             loading={notifLoading}
+            markingAllRead={markingAllRead}
+            clearingAll={clearingAll}
+            deletingNotifId={deletingNotifId}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onNotificationClick={handleNotificationClick}
@@ -439,6 +473,42 @@ export const Header = ({ onMobileNavToggle }) => {
           </Menu>
         </Box>
       </Toolbar>
+
+      {/* Global Auth / Workspace Session Transition Backdrop */}
+      <Backdrop
+        open={isLoggingOut || isSwitchingWorkspace}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 99999,
+          color: '#ffffff',
+          backgroundColor: 'rgba(15, 23, 42, 0.82)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2.5,
+        }}
+      >
+        <Box
+          component="img"
+          src={leadflowLogoWithoutLabel}
+          alt="LeadFlow"
+          sx={{
+            width: 52,
+            height: 52,
+            animation: 'pulse 1.8s infinite ease-in-out',
+            '@keyframes pulse': {
+              '0%': { transform: 'scale(0.95)', opacity: 0.8 },
+              '50%': { transform: 'scale(1.05)', opacity: 1 },
+              '100%': { transform: 'scale(0.95)', opacity: 0.8 },
+            },
+          }}
+        />
+        <CircularProgress color="inherit" size={32} thickness={4} />
+        <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em', color: '#ffffff' }}>
+          {isLoggingOut ? 'Signing out of LeadFlow...' : 'Switching workspace session...'}
+        </Typography>
+      </Backdrop>
     </AppBar>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, IconButton, Avatar, Chip, Tooltip } from '@mui/material';
+import { Box, Typography, IconButton, Avatar, Chip, Tooltip, CircularProgress } from '@mui/material';
 import {
   Bell,
   Sparkles,
@@ -56,7 +56,7 @@ const getNotificationMeta = (type) => {
   }
 };
 
-export const NotificationItem = ({ notif, onClick, onDelete }) => {
+export const NotificationItem = ({ notif, isDeleting = false, onClick, onDelete }) => {
   const isUrgent =
     notif.type === 'doc_revision' ||
     notif.data?.urgent ||
@@ -71,7 +71,7 @@ export const NotificationItem = ({ notif, onClick, onDelete }) => {
 
   return (
     <Box
-      onClick={() => onClick(notif)}
+      onClick={() => !isDeleting && onClick(notif)}
       sx={{
         px: { xs: 2, sm: 2.25 },
         py: 1.75,
@@ -82,14 +82,15 @@ export const NotificationItem = ({ notif, onClick, onDelete }) => {
         maxWidth: '100%',
         boxSizing: 'border-box',
         borderBottom: '1px solid #f8fafc',
+        opacity: isDeleting ? 0.4 : 1,
         backgroundColor: isUrgent
           ? notif.isRead ? '#fffcfc' : '#fef2f2'
           : notif.isRead ? '#ffffff' : '#f8fbff',
         borderLeft: isUrgent
           ? notif.isRead ? '4px solid #fca5a5' : '4px solid #ef4444'
           : notif.isRead ? '4px solid transparent' : '4px solid #3b82f6',
-        cursor: 'pointer',
-        transition: 'background-color 0.15s ease',
+        cursor: isDeleting ? 'wait' : 'pointer',
+        transition: 'all 0.15s ease',
         '&:active': { backgroundColor: isUrgent ? '#fee2e2' : '#f1f5f9' },
         '&:hover': {
           backgroundColor: isUrgent
@@ -184,10 +185,11 @@ export const NotificationItem = ({ notif, onClick, onDelete }) => {
         <Tooltip title="Delete notification" arrow placement="left">
           <IconButton
             size="small"
+            disabled={isDeleting}
             onClick={(e) => onDelete(e, notif._id)}
             sx={{ p: 0.6, color: '#cbd5e1', borderRadius: '8px', '&:hover': { color: '#ef4444', backgroundColor: '#fee2e2' } }}
           >
-            <Trash2 size={14} />
+            {isDeleting ? <CircularProgress size={14} color="inherit" /> : <Trash2 size={14} />}
           </IconButton>
         </Tooltip>
       </Box>

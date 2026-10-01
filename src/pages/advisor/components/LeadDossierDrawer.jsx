@@ -56,9 +56,14 @@ export const LeadDossierDrawer = ({
   const [declineOpen, setDeclineOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState('SCHUFA credit score did not meet lender threshold');
   const [customDeclineReason, setCustomDeclineReason] = useState('');
+  const [submittingDecline, setSubmittingDecline] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [disbursedAmount, setDisbursedAmount] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
+  const [submittingArchive, setSubmittingArchive] = useState(false);
+  const [resolvingDuplicate, setResolvingDuplicate] = useState(false);
+  const [togglingTask, setTogglingTask] = useState(false);
+  const [restoringLead, setRestoringLead] = useState(false);
 
   const activeStageTask = tasks?.find((t) => {
     const tLeadId = t.leadId?._id || t.leadId;
@@ -234,8 +239,24 @@ export const LeadDossierDrawer = ({
             severity="warning"
             icon={<ShieldAlert size={18} />}
             action={
-              <Button size="small" color="inherit" onClick={() => onResolveDuplicate(lead._id || lead.id)} sx={{ fontWeight: 700 }}>
-                Mark Unique
+              <Button
+                size="small"
+                color="inherit"
+                disabled={resolvingDuplicate}
+                startIcon={resolvingDuplicate ? <CircularProgress size={12} color="inherit" /> : null}
+                onClick={async () => {
+                  if (onResolveDuplicate) {
+                    setResolvingDuplicate(true);
+                    try {
+                      await onResolveDuplicate(lead._id || lead.id);
+                    } finally {
+                      setResolvingDuplicate(false);
+                    }
+                  }
+                }}
+                sx={{ fontWeight: 700 }}
+              >
+                {resolvingDuplicate ? 'Resolving...' : 'Mark Unique'}
               </Button>
             }
             sx={{ mt: 2, borderRadius: 2 }}
@@ -440,7 +461,16 @@ export const LeadDossierDrawer = ({
                   size="small"
                   variant={activeStageTask.isCompleted ? 'outlined' : 'contained'}
                   color={activeStageTask.isCompleted ? 'inherit' : 'primary'}
-                  onClick={() => dispatch(completeTask({ taskId: activeStageTask._id, isCompleted: !activeStageTask.isCompleted }))}
+                  disabled={togglingTask}
+                  startIcon={togglingTask ? <CircularProgress size={12} color="inherit" /> : null}
+                  onClick={async () => {
+                    setTogglingTask(true);
+                    try {
+                      await dispatch(completeTask({ taskId: activeStageTask._id, isCompleted: !activeStageTask.isCompleted }));
+                    } finally {
+                      setTogglingTask(false);
+                    }
+                  }}
                   sx={{
                     minWidth: 'auto',
                     py: 0.35,
@@ -451,7 +481,7 @@ export const LeadDossierDrawer = ({
                     borderRadius: 1.5,
                   }}
                 >
-                  {activeStageTask.isCompleted ? 'Reopen' : 'Mark Done'}
+                  {togglingTask ? 'Saving...' : activeStageTask.isCompleted ? 'Reopen' : 'Mark Done'}
                 </Button>
               )}
             </Box>
@@ -494,11 +524,21 @@ export const LeadDossierDrawer = ({
             {(canChangeStage || isAdmin) && (
               <Button
                 size="small"
-                startIcon={<RotateCcw size={12} />}
-                onClick={() => onUnarchiveLead && onUnarchiveLead(lead._id || lead.id)}
+                disabled={restoringLead}
+                startIcon={restoringLead ? <CircularProgress size={12} color="inherit" /> : <RotateCcw size={12} />}
+                onClick={async () => {
+                  if (onUnarchiveLead) {
+                    setRestoringLead(true);
+                    try {
+                      await onUnarchiveLead(lead._id || lead.id);
+                    } finally {
+                      setRestoringLead(false);
+                    }
+                  }
+                }}
                 sx={{ textTransform: 'none', fontSize: '0.72rem', color: '#047857', minWidth: 'auto', p: 0.5 }}
               >
-                Restore
+                {restoringLead ? 'Restoring...' : 'Restore'}
               </Button>
             )}
           </Box>
@@ -769,27 +809,34 @@ export const LeadDossierDrawer = ({
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setDeclineOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>
+          <Button onClick={() => setDeclineOpen(false)} disabled={submittingDecline} sx={{ textTransform: 'none', color: '#64748b' }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             color="error"
+            disabled={submittingDecline}
+            startIcon={submittingDecline ? <CircularProgress size={14} color="inherit" /> : null}
             onClick={async () => {
               const finalReason = declineReason === 'Other custom reason' ? (customDeclineReason || 'Criteria not met.') : declineReason;
-              if (onDeclineLead) {
-                await onDeclineLead(lead._id || lead.id, finalReason);
+              setSubmittingDecline(true);
+              try {
+                if (onDeclineLead) {
+                  await onDeclineLead(lead._id || lead.id, finalReason);
+                }
+                setDeclineOpen(false);
+              } finally {
+                setSubmittingDecline(false);
               }
-              setDeclineOpen(false);
             }}
             sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, px: 2.5 }}
           >
-            Confirm & Decline Case
+            {submittingDecline ? 'Declining...' : 'Confirm & Decline Case'}
           </Button>
         </DialogActions>
       </Dialog>
       {/* Archive / Finalize Deal Dialog Modal */}
-      <Dialog open={archiveOpen} onClose={() => setArchiveOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={archiveOpen} onClose={() => !submittingArchive && setArchiveOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 800, color: '#065f46', display: 'flex', alignItems: 'center', gap: 1 }}>
           <Award size={22} color="#059669" /> Finalize Payout & Archive Case
         </DialogTitle>
@@ -827,24 +874,31 @@ export const LeadDossierDrawer = ({
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setArchiveOpen(false)} sx={{ textTransform: 'none', color: '#64748b' }}>
+          <Button onClick={() => setArchiveOpen(false)} disabled={submittingArchive} sx={{ textTransform: 'none', color: '#64748b' }}>
             Cancel
           </Button>
           <Button
             variant="contained"
             color="success"
+            disabled={submittingArchive}
+            startIcon={submittingArchive ? <CircularProgress size={14} color="inherit" /> : null}
             onClick={async () => {
-              if (onArchiveLead) {
-                await onArchiveLead(lead._id || lead.id, {
-                  finalDisbursedAmount: Number(disbursedAmount) || lead.loanAmount,
-                  closingNotes,
-                });
+              setSubmittingArchive(true);
+              try {
+                if (onArchiveLead) {
+                  await onArchiveLead(lead._id || lead.id, {
+                    finalDisbursedAmount: Number(disbursedAmount) || lead.loanAmount,
+                    closingNotes,
+                  });
+                }
+                setArchiveOpen(false);
+              } finally {
+                setSubmittingArchive(false);
               }
-              setArchiveOpen(false);
             }}
             sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, px: 2.5 }}
           >
-            Confirm & Archive to Portfolio
+            {submittingArchive ? 'Archiving...' : 'Confirm & Archive to Portfolio'}
           </Button>
         </DialogActions>
       </Dialog>

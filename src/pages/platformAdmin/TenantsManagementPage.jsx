@@ -157,9 +157,33 @@ export default function TenantsManagementPage() {
         />
 
         <ProvisionTenantModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} onSubmit={async (d) => { const r = await dispatch(createTenant(d)); return { success: createTenant.fulfilled.match(r), error: r.payload }; }} loading={actionLoading} />
-        <SuspendTenantModal isOpen={isBanOpen} onClose={() => setIsBanOpen(false)} tenant={selectedTenant} onConfirm={(r) => { dispatch(toggleTenantStatus({ tenantId: curId, status: 'suspended', reason: r })); setIsBanOpen(false); }} />
-        <ReactivateTenantModal isOpen={isReactivateOpen} onClose={() => setIsReactivateOpen(false)} tenant={selectedTenant} onConfirm={() => { dispatch(toggleTenantStatus({ tenantId: curId, status: 'active' })); setIsReactivateOpen(false); }} />
-        <EditTenantModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} tenant={selectedTenant} onSave={(d) => { dispatch(updateTenantDetails({ tenantId: curId, ...d })); setIsEditOpen(false); }} />
+        <SuspendTenantModal
+          isOpen={isBanOpen}
+          onClose={() => setIsBanOpen(false)}
+          tenant={selectedTenant}
+          onConfirm={async (r) => {
+            await dispatch(toggleTenantStatus({ tenantId: curId, status: 'suspended', reason: r }));
+            setIsBanOpen(false);
+          }}
+        />
+        <ReactivateTenantModal
+          isOpen={isReactivateOpen}
+          onClose={() => setIsReactivateOpen(false)}
+          tenant={selectedTenant}
+          onConfirm={async () => {
+            await dispatch(toggleTenantStatus({ tenantId: curId, status: 'active' }));
+            setIsReactivateOpen(false);
+          }}
+        />
+        <EditTenantModal
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          tenant={selectedTenant}
+          onSave={async (d) => {
+            await dispatch(updateTenantDetails({ tenantId: curId, ...d }));
+            setIsEditOpen(false);
+          }}
+        />
         <TenantMetricsDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} tenant={selectedTenant} metrics={selectedTenantMetrics} />
       </Box>
     </Box>

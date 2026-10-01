@@ -18,7 +18,7 @@ const ClientDocumentsPage = () => {
   const { portalData, portalLoading } = useSelector((s) => s.client);
   const [tab, setTab] = useState('all');
   const [previewDoc, setPreviewDoc] = useState(null);
-  const [uploadingType, setUploadingType] = useState(null);
+  const [uploadingTypes, setUploadingTypes] = useState({});
   const [toast, setToast] = useState(null);
 
   useSocket();
@@ -43,12 +43,13 @@ const ClientDocumentsPage = () => {
   const isVaultLocked = isPostCollectionStage || isDeclined || isArchived;
 
   const handleUpload = async (def, file) => {
+    const docType = def.docType;
+    setUploadingTypes((prev) => ({ ...prev, [docType]: true }));
     try {
-      setUploadingType(def.docType);
       const leadId = portalData?.lead?._id;
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('docType', def.docType);
+      formData.append('docType', docType);
       formData.append('category', def.category || 'personal');
       formData.append('title', def.title);
       formData.append('fileName', file.name);
@@ -67,7 +68,11 @@ const ClientDocumentsPage = () => {
     } catch (err) {
       setToast({ open: true, message: `Upload error: ${err.message || err || 'Failed to upload file'}`, severity: 'error' });
     } finally {
-      setUploadingType(null);
+      setUploadingTypes((prev) => {
+        const next = { ...prev };
+        delete next[docType];
+        return next;
+      });
     }
   };
 
@@ -209,7 +214,7 @@ const ClientDocumentsPage = () => {
 
         <DocumentDropzone
           onBatchUpload={handleBatch}
-          uploading={!!uploadingType}
+          uploading={Object.keys(uploadingTypes).length > 0}
           disabled={isPostCollectionStage || hasRevisionRequested}
           disabledTitle={
             hasRevisionRequested
@@ -267,7 +272,7 @@ const ClientDocumentsPage = () => {
               key={def.docType}
               definition={def}
               uploadedDoc={docs.find((d) => d.docType === def.docType)}
-              uploading={uploadingType === def.docType}
+              uploading={Boolean(uploadingTypes[def.docType])}
               isVaultLocked={isPostCollectionStage}
               hasRevisionRequested={hasRevisionRequested}
               onUploadFile={handleUpload}
