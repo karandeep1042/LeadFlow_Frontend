@@ -7,11 +7,11 @@ import {
   TextField,
   Button,
   InputAdornment,
-  Alert,
-  AlertTitle,
+  CircularProgress,
 } from '@mui/material';
-import { Mail, ArrowLeft, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowLeft } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
+import NotificationAlert from '../../components/common/NotificationAlert';
 import { forgotPassword } from '../../redux/thunks/authThunk';
 import { clearAuthError, resetForgotPasswordState } from '../../redux/slices/authSlice';
 import { ROUTES } from '../../utils/constants/routes';
@@ -19,24 +19,60 @@ import { ROUTES } from '../../utils/constants/routes';
 export const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { loading, error, resetCodeSent, resetCodePreview } = useSelector((state) => state.auth);
+  const { loading, error } = useSelector((state) => state.auth);
 
   const [email, setEmail] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const [toast, setToast] = useState({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
 
   useEffect(() => {
     dispatch(clearAuthError());
+    dispatch(resetForgotPasswordState());
+    return () => {
+      dispatch(clearAuthError());
+    };
   }, [dispatch]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setValidationError('');
-    if (!email.trim()) return setValidationError('Please enter your email address.');
-    dispatch(forgotPassword({ email: email.trim() }));
-  };
+  useEffect(() => {
+    if (error) {
+      setToast({
+        open: true,
+        message: error,
+        severity: 'error',
+      });
+    }
+  }, [error]);
 
-  const handleProceedToReset = () => {
-    navigate(`${ROUTES.RESET_PASSWORD}?email=${encodeURIComponent(email)}&code=${resetCodePreview || ''}`);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setToast({
+        open: true,
+        message: 'Please enter your registered email address.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    const result = await dispatch(forgotPassword({ email: trimmedEmail }));
+    if (forgotPassword.fulfilled.match(result)) {
+      navigate(`${ROUTES.RESET_PASSWORD}?email=${encodeURIComponent(trimmedEmail)}`, {
+        state: {
+          email: trimmedEmail,
+          message: `A 6-digit verification code and reset instructions have been emailed to ${trimmedEmail}. Please check your inbox (and spam folder) to find your verification code.`,
+        },
+      });
+    } else {
+      setToast({
+        open: true,
+        message: result.payload || error || 'Failed to dispatch verification code.',
+        severity: 'error',
+      });
+    }
   };
 
   return (
@@ -44,6 +80,18 @@ export const ForgotPasswordPage = () => {
       headline="Password Recovery"
       subtext="Fast, secure account recovery for brokers, advisors, and clients on LeadFlow."
     >
+      {/* Top-Right Floating Notification Alert */}
+      <NotificationAlert
+        open={toast.open}
+        message={toast.message}
+        severity={toast.severity}
+        onClose={() => {
+          setToast((prev) => ({ ...prev, open: false }));
+          dispatch(clearAuthError());
+        }}
+        autoHideDuration={5000}
+      />
+
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" sx={{ fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: '#0f172a' }}>
           LeadFlow
@@ -62,70 +110,39 @@ export const ForgotPasswordPage = () => {
         </Typography>
       </Box>
 
-      {(error || validationError) && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2.5 }} onClose={() => { setValidationError(''); dispatch(clearAuthError()); }}>
-          {validationError || error}
-        </Alert>
-      )}
-
-      {resetCodeSent ? (
-        <Box sx={{ p: 3, backgroundColor: '#f0fdf4', borderRadius: 3, border: '1px solid #bbf7d0', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-            <CheckCircle2 size={24} style={{ color: '#16a34a' }} />
-            <Typography variant="h6" sx={{ color: '#15803d', fontWeight: 700 }}>
-              Verification Code Dispatched
-            </Typography>
-          </Box>
-          <Typography variant="body2" sx={{ color: '#166534', mb: 2 }}>
-            A 6-digit verification code has been dispatched for <strong>{email}</strong>.
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', mb: 0.75, fontSize: '0.85rem' }}>
+            Registered Email Address
           </Typography>
-
-          {resetCodePreview && (
-            <Box sx={{ p: 1.5, backgroundColor: '#ffffff', borderRadius: 2, border: '1px dashed #16a34a', mb: 2.5, textAlign: 'center' }}>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.5 }}>
-                DEMO / PREVIEW CODE
-              </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '0.2em', color: '#15803d' }}>
-                {resetCodePreview}
-              </Typography>
-            </Box>
-          )}
-
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleProceedToReset}
-            sx={{ py: 1.4, backgroundColor: '#16a34a', color: '#ffffff', fontWeight: 700, '&:hover': { backgroundColor: '#15803d' } }}
-          >
-            Enter Code & Reset Password
-          </Button>
-        </Box>
-      ) : (
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              id="email"
-              placeholder="Enter your registered email (e.g. hans@hypobroker.de)"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setValidationError(''); }}
-              disabled={loading}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><Mail size={18} style={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-            />
-          </Box>
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
+          <TextField
+            id="email"
+            placeholder="e.g. hans@hypobroker.de"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            sx={{ py: 1.45, backgroundColor: '#18181b', color: '#ffffff', borderRadius: '10px', fontWeight: 700, fontSize: '1rem', mb: 2, '&:hover': { backgroundColor: '#09090b' } }}
-          >
-            {loading ? 'Sending Code...' : 'Send Verification Code'}
-          </Button>
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Mail size={18} style={{ color: '#94a3b8' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
         </Box>
-      )}
+
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          disabled={loading}
+          sx={{ py: 1.45, backgroundColor: '#18181b', color: '#ffffff', borderRadius: '10px', fontWeight: 700, fontSize: '1rem', mb: 2, '&:hover': { backgroundColor: '#09090b' } }}
+        >
+          {loading ? <CircularProgress size={22} color="inherit" /> : 'Send Verification Code'}
+        </Button>
+      </Box>
 
       <Box sx={{ mt: 3, textAlign: 'center' }}>
         <Typography
@@ -141,3 +158,4 @@ export const ForgotPasswordPage = () => {
 };
 
 export default ForgotPasswordPage;
+

@@ -7,6 +7,9 @@ import documentReducer from './slices/documentSlice';
 import integrationReducer from './slices/integrationSlice';
 import automationReducer from './slices/automationSlice';
 import teamReducer from './slices/teamSlice';
+import brokerageDashboardReducer from './slices/brokerageDashboardSlice';
+import clientReducer from './slices/clientSlice';
+import notificationReducer from './slices/notificationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +21,9 @@ export const store = configureStore({
     integration: integrationReducer,
     automation: automationReducer,
     team: teamReducer,
+    brokerageDashboard: brokerageDashboardReducer,
+    client: clientReducer,
+    notification: notificationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

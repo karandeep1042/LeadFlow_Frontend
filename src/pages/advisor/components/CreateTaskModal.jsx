@@ -136,9 +136,9 @@ export const CreateTaskModal = ({
             <FormControl fullWidth size="small">
               <InputLabel>Priority</InputLabel>
               <Select value={priority} label="Priority" onChange={(e) => setPriority(e.target.value)}>
-                <MenuItem value="high">🔴 High Priority</MenuItem>
-                <MenuItem value="medium">🟡 Medium Priority</MenuItem>
-                <MenuItem value="low">🟢 Low Priority</MenuItem>
+                <MenuItem value="high">High Priority</MenuItem>
+                <MenuItem value="medium">Medium Priority</MenuItem>
+                <MenuItem value="low">Low Priority</MenuItem>
               </Select>
             </FormControl>
 
@@ -150,7 +150,7 @@ export const CreateTaskModal = ({
               size="small"
               value={dueAt}
               onChange={(e) => setDueAt(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
 

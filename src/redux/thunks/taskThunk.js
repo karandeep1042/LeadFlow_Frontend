@@ -57,6 +57,20 @@ export const updateTask = createAsyncThunk(
   }
 );
 
+export const fetchTaskAnalytics = createAsyncThunk(
+  'task/fetchTaskAnalytics',
+  async (_, thunkAPI) => {
+    try {
+      const response = await axiosInstance.get('/api/tasks/analytics');
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch task analytics.'
+      );
+    }
+  }
+);
+
 export const deleteTask = createAsyncThunk(
   'task/deleteTask',
   async ({ taskId }, thunkAPI) => {

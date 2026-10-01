@@ -46,9 +46,9 @@ const AUTH_BYPASS_ENDPOINTS = [
   '/api/auth/login',
   '/api/auth/register-brokerage',
   '/api/auth/forgot-password',
+  '/api/auth/verify-reset-code',
   '/api/auth/reset-password',
   '/api/auth/refresh-token',
-  '/api/auth/me',
 ];
 
 axiosInstance.interceptors.response.use(

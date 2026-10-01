@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Typography, Button, CircularProgress, Snackbar, Paper, Chip } from '@mui/material';
-import { Plus, RefreshCw, CheckSquare, Clock } from 'lucide-react';
+import { Box, Typography, Button, CircularProgress, Snackbar, Alert, Paper, Chip, IconButton, Tooltip } from '@mui/material';
+import { RefreshCw, CheckSquare, Clock, Archive } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
-  fetchTasks, createTask, completeTask, updateTask, deleteTask,
+  fetchTasks, fetchTaskAnalytics, completeTask, updateTask, deleteTask,
 } from '../../redux/thunks/taskThunk';
 import {
   setActiveTab, setSearchQuery, setPriorityFilter, setAdvisorFilter, setSortBy,
@@ -12,38 +12,289 @@ import {
 import {
   fetchLeads, updateLeadStage, assignLeadAdvisor, convertToClient, resolveDuplicate, addLeadNote,
 } from '../../redux/thunks/leadThunk';
+import { toggleClientStatus } from '../../redux/thunks/clientThunk';
+import { rejectDocument } from '../../redux/thunks/documentThunk';
 import teamApi from '../../services/api/teamApi';
+import { subscribeToSocketEvent } from '../../services/socket/socketService';
 
 import TaskMetricsStrip from './components/TaskMetricsStrip';
 import TaskFilterBar from './components/TaskFilterBar';
 import TaskCard from './components/TaskCard';
-import CreateTaskModal from './components/CreateTaskModal';
 import EditTaskModal from './components/EditTaskModal';
 import LeadDossierDrawer from './components/LeadDossierDrawer';
+import StageTransitionConfirmModal from './components/StageTransitionConfirmModal';
+import { getStageDisplayName } from '../../utils/automationConstants';
+
+const ALLOWED_STAGE_TRANSITIONS = {
+  'New': ['Contacted'],
+  'Contacted': ['Document Collection'],
+  'Document Collection': ['Bank Submission'],
+  'Bank Submission': ['Won', 'Document Collection'],
+  'Won': ['Lost'],
+  'Lost': [],
+};
 
 export const TasksManagementPage = () => {
   const dispatch = useDispatch();
-  const { role: userRole } = useSelector((state) => state.auth);
+  const { user, role: userRole } = useSelector((state) => state.auth);
+  const currentUserId = user?._id || user?.id;
+  const isAdmin = userRole === 'brokerage_admin' || userRole === 'admin';
   const {
-    tasks, activeTab, searchQuery, priorityFilter, advisorFilter,
+    tasks, analytics, activeTab, searchQuery, priorityFilter, advisorFilter,
     sortBy, loading, actionLoading,
   } = useSelector((state) => state.task);
   const { leads, assigningAdvisor } = useSelector((state) => state.lead);
 
   const [advisors, setAdvisors] = useState([]);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [toastMsg, setToastMsg] = useState('');
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'info' });
+  const [stageConfirmModal, setStageConfirmModal] = useState({
+    open: false,
+    leadId: null,
+    targetStage: null,
+    previousStage: null,
+    leadName: '',
+    type: null,
+    docsSummary: null,
+    pendingTask: null,
+    leadObj: null,
+  });
 
-  const notify = (msg) => setToastMsg(msg);
+  const notify = (msg, severity = 'info') => {
+    setToast({ open: true, message: msg, severity });
+  };
+  const notifySuccess = (msg) => notify(msg, 'success');
+  const notifyError = (msg) => notify(msg, 'error');
+  const notifyWarning = (msg) => notify(msg, 'warning');
+  const notifyInfo = (msg) => notify(msg, 'info');
+
+  const executeStageChange = async (leadId, targetStage, previousStage, resolvePendingTask = true, extraData = {}) => {
+    const targetLead = leads.find((l) => String(l._id || l.id) === String(leadId));
+    const borrowerName = targetLead ? `${targetLead.firstName} ${targetLead.lastName || ''}`.trim() : 'Lead';
+    const isClaimedFromIngestion = previousStage === 'New' && targetStage === 'Contacted';
+    const isBankRevisionRegression = previousStage === 'Bank Submission' && targetStage === 'Document Collection';
+
+    try {
+      const res = await dispatch(updateLeadStage({
+        leadId,
+        stage: targetStage,
+        previousStage,
+        resolvePendingTask,
+        isRevision: extraData.isRevision,
+        selectedDocIds: extraData.selectedDocIds,
+        reason: extraData.reason,
+      })).unwrap();
+      dispatch(fetchTasks());
+      const updatedLead = res?.data?.data || res?.data || targetLead;
+      const finalName = updatedLead ? `${updatedLead.firstName} ${updatedLead.lastName || ''}`.trim() : borrowerName;
+
+      if (isClaimedFromIngestion) {
+        notifySuccess(`Successfully claimed ${finalName}! Case assigned to you and moved to Initial Consultation.`);
+      } else if (isBankRevisionRegression) {
+        const count = extraData.selectedDocIds?.length || 0;
+        if (count > 0) {
+          notifyInfo(`Case moved to Document Collection. ${count} revision request(s) sent to ${finalName}.`);
+        } else {
+          notifyInfo(`Case moved to Document Collection. Revision notification sent to ${finalName}.`);
+        }
+      } else if (targetStage === 'Contacted' && (previousStage === 'Document Collection' || previousStage === 'Bank Submission')) {
+        notifyWarning('Deal moved back to Initial Consultation. Client Portal access deactivated.');
+      } else if (targetStage === 'Document Collection' && previousStage === 'Contacted') {
+        notifySuccess('Deal moved to Document Collection. Client Portal document access enabled.');
+      } else if (targetStage === 'Won') {
+        notifySuccess(`Loan approval secured for ${finalName}! Ready for Notary & Closing.`);
+      } else if (targetStage === 'Lost') {
+        notifySuccess(`${finalName} advanced to Notary & Closing! Closing workflow initiated.`);
+      } else {
+        notifySuccess(`Successfully moved ${finalName} to ${getStageDisplayName(targetStage)}.`);
+      }
+    } catch (err) {
+      notifyError(err?.error || err?.message || 'Failed to update stage.');
+    }
+  };
+
+  const handleRequestStageChange = (leadId, targetStage, previousStage, leadObj = null) => {
+    const targetLead = leadObj || leads.find((l) => String(l._id || l.id) === String(leadId)) || selectedLead;
+    const actualPrevStage = previousStage || targetLead?.stage || 'New';
+    const borrowerName = targetLead ? `${targetLead.firstName} ${targetLead.lastName || ''}`.trim() : 'Borrower';
+
+    if (actualPrevStage !== 'New' && targetStage === 'New') {
+      notifyError('Stage Lock: Deals cannot be moved back to Lead Ingestion once claimed and progressed.');
+      return;
+    }
+
+    const terminalStages = ['Won', 'Lost', 'Approved', 'Closed Won', 'Closed Lost'];
+    if (terminalStages.includes(actualPrevStage) && targetStage !== actualPrevStage) {
+      const isAllowedAdvancement = (actualPrevStage === 'Won' || actualPrevStage === 'Approved') && (targetStage === 'Lost' || targetStage === 'Closed Won');
+      if (!isAllowedAdvancement) {
+        notifyError('Stage Lock: Deals with approved loan offers or finalized closings cannot be moved backward.');
+        return;
+      }
+    }
+
+    if (actualPrevStage !== targetStage) {
+      const allowed = ALLOWED_STAGE_TRANSITIONS[actualPrevStage] || [];
+      if (!allowed.includes(targetStage)) {
+        if (actualPrevStage === 'Contacted' && targetStage === 'Bank Submission') {
+          notifyError('Sequential Pipeline Rule: Deals must progress step-by-step through Document Collection before Bank Submission.');
+        } else {
+          notifyError(`Sequential Pipeline: Cannot jump directly from "${getStageDisplayName(actualPrevStage)}" to "${getStageDisplayName(targetStage)}". Cases must progress step-by-step through each milestone.`);
+        }
+        return;
+      }
+    }
+
+    if (targetStage === 'Bank Submission') {
+      const docsSummary = targetLead?.docsSummary;
+      if (!docsSummary?.isComplianceComplete) {
+        setStageConfirmModal({
+          open: true,
+          type: 'compliance_blocked',
+          leadId,
+          targetStage,
+          previousStage: actualPrevStage,
+          leadName: borrowerName,
+          docsSummary: docsSummary || {
+            totalRequired: 18,
+            uploadedCount: 0,
+            verifiedCount: 0,
+            unverifiedCount: 18,
+            rejectedCount: 0,
+            pendingCount: 0,
+          },
+          pendingTask: null,
+          leadObj: targetLead,
+        });
+        return;
+      }
+    }
+
+    // Smart Stage Task Gate: Check if current stage task is pending completion
+    // Claiming a lead (moving from Lead Ingestion to Initial Consultation) does NOT require completing any prior task
+    const isClaimingFromNew = actualPrevStage === 'New' && targetStage === 'Contacted';
+    const isAdvancingForward =
+      actualPrevStage !== targetStage &&
+      !isClaimingFromNew &&
+      !(actualPrevStage === 'Bank Submission' && targetStage === 'Document Collection');
+    if (isAdvancingForward) {
+      const pendingTask = tasks.find((t) => {
+        const tLeadId = t.leadId?._id || t.leadId;
+        const matchesLead = String(tLeadId) === String(leadId);
+        const matchesStage = t.stage === actualPrevStage || (!t.stage && t.status === 'pending');
+        return matchesLead && matchesStage && !t.isCompleted && t.status !== 'superseded';
+      });
+
+      if (pendingTask) {
+        setStageConfirmModal({
+          open: true,
+          type: 'task_pending_advance',
+          leadId,
+          targetStage,
+          previousStage: actualPrevStage,
+          leadName: borrowerName,
+          pendingTask,
+          docsSummary: null,
+          leadObj: targetLead,
+        });
+        return;
+      }
+    }
+
+    if (actualPrevStage === 'Contacted' && targetStage === 'Document Collection') {
+      setStageConfirmModal({
+        open: true,
+        type: 'activate_portal',
+        leadId,
+        targetStage,
+        previousStage: actualPrevStage,
+        leadName: borrowerName,
+        docsSummary: targetLead?.docsSummary,
+        pendingTask: null,
+        leadObj: targetLead,
+      });
+      return;
+    }
+
+    if (actualPrevStage === 'Document Collection' && targetStage === 'Bank Submission') {
+      setStageConfirmModal({
+        open: true,
+        type: 'bank_submission',
+        leadId,
+        targetStage,
+        previousStage: actualPrevStage,
+        leadName: borrowerName,
+        docsSummary: targetLead?.docsSummary,
+        pendingTask: null,
+        leadObj: targetLead,
+      });
+      return;
+    }
+
+    if (actualPrevStage === 'Bank Submission' && targetStage === 'Document Collection') {
+      setStageConfirmModal({
+        open: true,
+        type: 'bank_revision_regression',
+        leadId,
+        targetStage,
+        previousStage: actualPrevStage,
+        leadName: borrowerName,
+        docsSummary: targetLead?.docsSummary,
+        pendingTask: null,
+        leadObj: targetLead,
+      });
+      return;
+    }
+
+    executeStageChange(leadId, targetStage, actualPrevStage);
+  };
+
+  const handleConfirmStageTransition = async (confirmData = {}) => {
+    const { leadId, targetStage, previousStage, pendingTask } = stageConfirmModal;
+    const resolvePendingTask = confirmData?.resolvePendingTask ?? true;
+    const pendingTaskId = confirmData?.pendingTaskId || pendingTask?._id;
+
+    setStageConfirmModal({ open: false, leadId: null, targetStage: null, previousStage: null, leadName: '', type: null, docsSummary: null, pendingTask: null, leadObj: null });
+
+    if (pendingTaskId) {
+      dispatch(completeTask({ taskId: pendingTaskId, isCompleted: true }));
+    }
+
+    if (leadId && targetStage) {
+      await executeStageChange(leadId, targetStage, previousStage, resolvePendingTask, confirmData);
+    }
+  };
+
+  const handleCancelStageTransition = () => {
+    setStageConfirmModal({ open: false, leadId: null, targetStage: null, previousStage: null, leadName: '', type: null, docsSummary: null, pendingTask: null, leadObj: null });
+  };
 
   useEffect(() => {
     loadData();
+
+    // Live WebSocket real-time synchronization for stage transitions and task changes
+    const unsubTask = subscribeToSocketEvent('task:synced', () => {
+      dispatch(fetchTasks());
+    });
+    const unsubStage = subscribeToSocketEvent('lead:stage_updated', () => {
+      dispatch(fetchTasks());
+      dispatch(fetchLeads());
+    });
+    const unsubLeadUpdated = subscribeToSocketEvent('lead:updated', () => {
+      dispatch(fetchTasks());
+      dispatch(fetchLeads());
+    });
+
+    return () => {
+      unsubTask();
+      unsubStage();
+      unsubLeadUpdated();
+    };
   }, [dispatch]);
 
   const loadData = async () => {
     dispatch(fetchTasks());
+    dispatch(fetchTaskAnalytics());
     dispatch(fetchLeads());
     try {
       const res = await teamApi.getAdvisors();
@@ -56,19 +307,9 @@ export const TasksManagementPage = () => {
   const handleToggleComplete = async (taskId, isCompleted) => {
     try {
       await dispatch(completeTask({ taskId, isCompleted })).unwrap();
-      notify(isCompleted ? 'Task marked as completed! 🎯' : 'Task reopened.');
+      notifySuccess(isCompleted ? 'Task marked as completed.' : 'Task reopened.');
     } catch (err) {
-      notify('Failed to update task completion.');
-    }
-  };
-
-  const handleCreateTask = async (taskData) => {
-    try {
-      await dispatch(createTask(taskData)).unwrap();
-      setCreateModalOpen(false);
-      notify('New mortgage task registered successfully.');
-    } catch (err) {
-      notify('Failed to create task.');
+      notifyError(err?.message || err?.error || 'Failed to update task completion.');
     }
   };
 
@@ -76,9 +317,9 @@ export const TasksManagementPage = () => {
     try {
       await dispatch(updateTask({ taskId, taskData })).unwrap();
       setEditTask(null);
-      notify('Task updated successfully.');
+      notifySuccess('Task updated successfully.');
     } catch (err) {
-      notify('Failed to update task.');
+      notifyError(err?.message || err?.error || 'Failed to update task.');
     }
   };
 
@@ -86,30 +327,51 @@ export const TasksManagementPage = () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await dispatch(deleteTask({ taskId })).unwrap();
-        notify('Task removed.');
+        notifyInfo('Task removed.');
       } catch (err) {
-        notify('Failed to delete task.');
+        notifyError(err?.message || err?.error || 'Failed to delete task.');
       }
     }
   };
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Mortgage Advisors see tasks assigned to them and unassigned tasks; Admins see brokerage-wide tasks
+  const advisorScopedTasks = isAdmin
+    ? tasks
+    : tasks.filter((t) => {
+        const advId = t.assignedAdvisorId?._id || t.assignedAdvisorId;
+        return !advId || String(advId) === String(currentUserId);
+      });
 
   const counts = {
-    total: tasks.length,
-    overdue: tasks.filter((t) => !t.isCompleted && new Date(t.dueAt) < now).length,
-    dueToday: tasks.filter((t) => !t.isCompleted && new Date(t.dueAt) >= startOfDay && new Date(t.dueAt) <= endOfDay).length,
-    upcoming: tasks.filter((t) => !t.isCompleted && new Date(t.dueAt) > endOfDay).length,
-    completed: tasks.filter((t) => t.isCompleted).length,
+    total: advisorScopedTasks.filter((t) => !t.isCompleted || (t.completedAt && new Date(t.completedAt) >= sevenDaysAgo) || (!t.completedAt && t.isCompleted)).length,
+    overdue: advisorScopedTasks.filter((t) => !t.isCompleted && new Date(t.dueAt) < now).length,
+    dueToday: advisorScopedTasks.filter((t) => !t.isCompleted && new Date(t.dueAt) >= startOfDay && new Date(t.dueAt) <= endOfDay).length,
+    upcoming: advisorScopedTasks.filter((t) => !t.isCompleted && new Date(t.dueAt) > endOfDay).length,
+    completed: advisorScopedTasks.filter((t) => t.isCompleted && (t.completedAt ? new Date(t.completedAt) >= sevenDaysAgo : true)).length,
+    archive: advisorScopedTasks.filter((t) => t.isCompleted && t.completedAt && new Date(t.completedAt) < sevenDaysAgo).length,
+    totalAll: advisorScopedTasks.length,
   };
 
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = advisorScopedTasks.filter((task) => {
     const due = new Date(task.dueAt);
-    if (activeTab === 'overdue' && (task.isCompleted || due >= now)) return false;
-    if (activeTab === 'due_today' && (task.isCompleted || due < startOfDay || due > endOfDay)) return false;
-    if (activeTab === 'upcoming' && (task.isCompleted || due <= endOfDay)) return false;
-    if (activeTab === 'completed' && !task.isCompleted) return false;
+    const completedDate = task.completedAt ? new Date(task.completedAt) : null;
+    const isArchived = Boolean(task.isCompleted && completedDate && completedDate < sevenDaysAgo);
+
+    if (activeTab === 'archive') {
+      if (!task.isCompleted || !isArchived) return false;
+    } else {
+      // For all standard operational tabs, hide old archived completed tasks (> 7d)
+      if (isArchived) return false;
+
+      if (activeTab === 'overdue' && (task.isCompleted || due >= now)) return false;
+      if (activeTab === 'due_today' && (task.isCompleted || due < startOfDay || due > endOfDay)) return false;
+      if (activeTab === 'upcoming' && (task.isCompleted || due <= endOfDay)) return false;
+      if (activeTab === 'completed' && !task.isCompleted) return false;
+    }
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -119,7 +381,7 @@ export const TasksManagementPage = () => {
 
     if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
 
-    if (advisorFilter !== 'all') {
+    if (isAdmin && advisorFilter !== 'all') {
       if (advisorFilter === 'unassigned') {
         if (task.assignedAdvisorId) return false;
       } else {
@@ -131,6 +393,11 @@ export const TasksManagementPage = () => {
   });
 
   filteredTasks.sort((a, b) => {
+    if (activeTab === 'archive') {
+      const bComp = b.completedAt ? new Date(b.completedAt) : new Date(b.updatedAt || b.createdAt);
+      const aComp = a.completedAt ? new Date(a.completedAt) : new Date(a.updatedAt || a.createdAt);
+      return bComp - aComp;
+    }
     if (sortBy === 'due_soonest') return new Date(a.dueAt) - new Date(b.dueAt);
     if (sortBy === 'most_overdue') return new Date(a.dueAt) - new Date(b.dueAt);
     if (sortBy === 'priority') {
@@ -144,31 +411,86 @@ export const TasksManagementPage = () => {
   return (
     <DashboardLayout>
       {/* Top Header */}
-      <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            <Typography variant="h2" sx={{ fontWeight: 800, color: '#0f172a', fontSize: { xs: '1.75rem', md: '2.1rem' } }}>
-              Pending Tasks & SLAs
-            </Typography>
-            <Chip label={`${counts.total} Tasks`} color="primary" size="small" sx={{ fontWeight: 700 }} />
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', md: 'center' },
+          gap: { xs: 1.5, md: 2 },
+        }}
+      >
+        <Box sx={{ width: { xs: '100%', md: 'auto' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mb: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  fontSize: { xs: '1.4rem', sm: '1.75rem', md: '2.1rem' },
+                }}
+              >
+                Pending Tasks & SLAs
+              </Typography>
+              <Chip
+                label={`${counts.total} Tasks`}
+                color="primary"
+                size="small"
+                sx={{ fontWeight: 700, height: 24, fontSize: '0.75rem' }}
+              />
+            </Box>
+
+            {/* Mobile inline refresh button */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
+              <Tooltip title="Refresh tasks">
+                <IconButton
+                  size="small"
+                  onClick={loadData}
+                  disabled={loading}
+                  sx={{
+                    borderRadius: 2,
+                    p: 0.75,
+                    border: '1px solid #cbd5e1',
+                    color: '#475569',
+                    backgroundColor: '#ffffff',
+                    '&:hover': { backgroundColor: '#f8fafc' },
+                  }}
+                >
+                  <RefreshCw size={16} />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
-          <Typography variant="body1" sx={{ color: '#64748b' }}>
+          <Typography variant="body2" sx={{ color: '#64748b', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
             Track due diligence action items, expat outreach deadlines, and bank submission SLAs.
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Button variant="outlined" onClick={loadData} startIcon={<RefreshCw size={15} />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, borderColor: '#cbd5e1', color: '#475569' }}>
+        {/* Desktop actions */}
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+          <Button
+            variant="outlined"
+            onClick={loadData}
+            disabled={loading}
+            startIcon={<RefreshCw size={15} />}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 700,
+              borderColor: '#cbd5e1',
+              color: '#475569',
+              '&:hover': { borderColor: '#94a3b8', backgroundColor: '#f8fafc' },
+            }}
+          >
             Refresh
-          </Button>
-          <Button variant="contained" onClick={() => setCreateModalOpen(true)} startIcon={<Plus size={16} />} sx={{ backgroundColor: '#18181b', color: '#ffffff', borderRadius: 2, textTransform: 'none', fontWeight: 700, px: 2.5 }}>
-            + Create Task
           </Button>
         </Box>
       </Box>
 
       {/* Metrics Strip */}
-      <TaskMetricsStrip counts={counts} activeTab={activeTab} onTabChange={(tab) => dispatch(setActiveTab(tab))} />
+      <TaskMetricsStrip counts={counts} analytics={analytics} activeTab={activeTab} onTabChange={(tab) => dispatch(setActiveTab(tab))} />
 
       {/* Filter Toolbar */}
       <TaskFilterBar
@@ -187,6 +509,77 @@ export const TasksManagementPage = () => {
         userRole={userRole}
       />
 
+      {/* Archive Header Banner */}
+      {activeTab === 'archive' && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.25,
+            mb: 2.5,
+            borderRadius: 2.5,
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                backgroundColor: '#eef2ff',
+                color: '#4f46e5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid #c7d2fe',
+              }}
+            >
+              <Archive size={20} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                Task Completion Archive & Historical Audit Trail
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                Tasks completed over 7 days ago are automatically archived here to keep operational inboxes focused while maintaining SLA analytics and BaFin compliance audit trails.
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              label={`${counts.archive} Archived`}
+              size="small"
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                backgroundColor: '#ffffff',
+                color: '#4338ca',
+                border: '1px solid #c7d2fe',
+              }}
+            />
+            {analytics?.avgResolutionHours > 0 && (
+              <Chip
+                label={`Avg SLA: ${analytics.avgResolutionHours}h`}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  backgroundColor: '#ecfdf5',
+                  color: '#065f46',
+                  border: '1px solid #a7f3d0',
+                }}
+              />
+            )}
+          </Box>
+        </Paper>
+      )}
+
       {/* Task List */}
       {loading && tasks.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
@@ -202,6 +595,7 @@ export const TasksManagementPage = () => {
               onOpenLead={(lead) => setSelectedLead(lead)}
               onEditTask={(t) => setEditTask(t)}
               onDeleteTask={handleDeleteTask}
+              userRole={userRole}
             />
           ))}
         </Box>
@@ -211,36 +605,26 @@ export const TasksManagementPage = () => {
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
             No tasks found
           </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b', maxWidth: 400, mx: 'auto', mb: 2.5 }}>
+          <Typography variant="body2" sx={{ color: '#64748b', maxWidth: 460, mx: 'auto' }}>
             {activeTab === 'all'
-              ? 'There are no active or completed tasks in this view. Click below to add a new task.'
+              ? 'No tasks currently scheduled. Operational tasks are automatically generated as leads advance across pipeline stages and SLA rules.'
               : `There are no tasks matching the "${activeTab.replace('_', ' ')}" filter.`}
           </Typography>
-          <Button variant="contained" onClick={() => setCreateModalOpen(true)} startIcon={<Plus size={16} />} sx={{ backgroundColor: '#18181b', color: '#ffffff', borderRadius: 2, textTransform: 'none', fontWeight: 700 }}>
-            Create Task
-          </Button>
         </Paper>
       )}
 
       {/* Modals & Lead Drawer */}
-      <CreateTaskModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSave={handleCreateTask}
-        leads={leads}
-        advisors={advisors}
-        saving={actionLoading}
-      />
-
-      <EditTaskModal
-        open={Boolean(editTask)}
-        task={editTask}
-        onClose={() => setEditTask(null)}
-        onSave={handleUpdateTask}
-        leads={leads}
-        advisors={advisors}
-        saving={actionLoading}
-      />
+      {isAdmin && (
+        <EditTaskModal
+          open={Boolean(editTask)}
+          task={editTask}
+          onClose={() => setEditTask(null)}
+          onSave={handleUpdateTask}
+          leads={leads}
+          advisors={advisors}
+          saving={actionLoading}
+        />
+      )}
 
       <LeadDossierDrawer
         open={Boolean(selectedLead)}
@@ -248,31 +632,91 @@ export const TasksManagementPage = () => {
         lead={selectedLead}
         advisors={advisors}
         userRole={userRole}
+        currentUserId={currentUserId}
         isAssigningAdvisor={assigningAdvisor}
-        onStageChange={async (leadId, stage, prevStage) => {
-          await dispatch(updateLeadStage({ leadId, stage, previousStage: prevStage })).unwrap();
-          notify(`Lead stage updated to ${stage}`);
-          dispatch(fetchTasks());
-        }}
+        onStageChange={handleRequestStageChange}
         onAssignAdvisor={async (leadId, advId) => {
-          await dispatch(assignLeadAdvisor({ leadId, assignedAdvisorId: advId || null })).unwrap();
-          notify('Advisor assignment updated.');
-          dispatch(fetchTasks());
+          try {
+            await dispatch(assignLeadAdvisor({ leadId, assignedAdvisorId: advId || null })).unwrap();
+            notifySuccess('Advisor assignment updated.');
+            dispatch(fetchTasks());
+          } catch (err) {
+            notifyError(err?.message || err?.error || 'Failed to assign advisor.');
+          }
         }}
         onConvertToClient={async (leadId) => {
-          await dispatch(convertToClient({ leadId })).unwrap();
-          notify('Lead converted to Client Portal account.');
+          try {
+            const res = await dispatch(convertToClient({ leadId })).unwrap();
+            notifySuccess(res?.message || 'Lead converted to Client Portal account (Portal Active). Onboarding invitation email sent.');
+          } catch (err) {
+            notifyError(err?.message || err?.error || 'Failed to convert lead to client.');
+          }
+        }}
+        onToggleClientStatus={async (clientId, status, reason) => {
+          try {
+            const res = await dispatch(toggleClientStatus({ clientId, status, reason })).unwrap();
+            if (status === 'suspended') {
+              notifyWarning(res?.data?.message || 'Client portal account deactivated and suspended. Notification email sent.');
+            } else {
+              notifySuccess(res?.data?.message || `Client portal status updated to ${status}. Notification email sent.`);
+            }
+          } catch (err) {
+            notifyError(err?.message || err?.error || 'Failed to update client status.');
+          }
         }}
         onResolveDuplicate={async (leadId) => {
-          await dispatch(resolveDuplicate({ leadId, action: 'mark_unique' })).unwrap();
-          notify('Duplicate marked as unique.');
+          try {
+            await dispatch(resolveDuplicate({ leadId, action: 'mark_unique' })).unwrap();
+            notifySuccess('Duplicate marked as unique.');
+          } catch (err) {
+            notifyError(err?.message || err?.error || 'Failed to resolve duplicate.');
+          }
         }}
         onAddNote={async (leadId, note) => {
-          await dispatch(addLeadNote({ leadId, note })).unwrap();
+          try {
+            await dispatch(addLeadNote({ leadId, note })).unwrap();
+            notifySuccess('Note added successfully.');
+          } catch (err) {
+            notifyError(err?.message || err?.error || 'Failed to add note.');
+          }
         }}
       />
 
-      <Snackbar open={Boolean(toastMsg)} autoHideDuration={3500} onClose={() => setToastMsg('')} message={toastMsg} />
+      <StageTransitionConfirmModal
+        open={stageConfirmModal.open}
+        data={stageConfirmModal}
+        loading={loading}
+        onConfirm={handleConfirmStageTransition}
+        onCancel={handleCancelStageTransition}
+        onOpenDossier={(l) => setSelectedLead(l)}
+      />
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={5000}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{
+          zIndex: 9999,
+          top: { xs: 16, sm: 24 },
+          right: { xs: 16, sm: 24 },
+        }}
+      >
+        <Alert
+          severity={toast.severity}
+          onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+          sx={{
+            borderRadius: 2.5,
+            fontWeight: 600,
+            fontSize: '0.875rem',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            minWidth: 300,
+            maxWidth: { xs: '90vw', sm: 480 },
+          }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </DashboardLayout>
   );
 };

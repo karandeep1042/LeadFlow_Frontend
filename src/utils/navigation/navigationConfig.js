@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  UserCheck,
   Webhook,
   Zap,
   Kanban,
@@ -13,7 +14,7 @@ import {
   Shield,
   FileText,
   BarChart3,
-  MessageSquare,
+  Mail,
 } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 
@@ -33,6 +34,12 @@ export const NAVIGATION_CONFIG = {
           path: ROUTES.BROKERAGE_ADMIN_TEAM,
           icon: Users,
           badge: 'Staff',
+        },
+        {
+          title: 'Clients & Borrowers',
+          path: ROUTES.BROKERAGE_ADMIN_CLIENTS,
+          icon: UserCheck,
+          badge: null,
         },
         {
           title: 'Lead Ingestion (Webhooks)',
@@ -63,6 +70,12 @@ export const NAVIGATION_CONFIG = {
           icon: CheckSquare,
           badge: null,
         },
+        {
+          title: 'Document Verification',
+          path: ROUTES.ADVISOR_DOCUMENTS,
+          icon: FileText,
+          badge: null,
+        },
       ],
     },
   ],
@@ -79,8 +92,14 @@ export const NAVIGATION_CONFIG = {
         },
         {
           title: 'Platform Analytics',
-          path: '#analytics',
+          path: ROUTES.PLATFORM_ADMIN_ANALYTICS,
           icon: BarChart3,
+          badge: 'Live',
+        },
+        {
+          title: 'Email Templates',
+          path: ROUTES.PLATFORM_ADMIN_EMAIL_TEMPLATES,
+          icon: Mail,
           badge: null,
         },
         {
@@ -111,7 +130,7 @@ export const NAVIGATION_CONFIG = {
         },
         {
           title: 'Document Inbox',
-          path: '#advisor-documents',
+          path: ROUTES.ADVISOR_DOCUMENTS,
           icon: FileText,
           badge: null,
         },
@@ -135,12 +154,6 @@ export const NAVIGATION_CONFIG = {
           icon: UploadCloud,
           badge: 'Required',
         },
-        {
-          title: 'Advisor Messages',
-          path: '#client-messages',
-          icon: MessageSquare,
-          badge: null,
-        },
       ],
     },
   ],
@@ -149,3 +162,4 @@ export const NAVIGATION_CONFIG = {
 export const getRoleNavigation = (role) => {
   return NAVIGATION_CONFIG[role] || NAVIGATION_CONFIG.brokerage_admin;
 };
+

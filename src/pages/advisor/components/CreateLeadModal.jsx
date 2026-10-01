@@ -5,6 +5,7 @@ import {
   FormControl, InputLabel, Select,
 } from '@mui/material';
 import { UserPlus } from 'lucide-react';
+import PhoneInputField from '../../../components/common/PhoneInputField';
 
 const CITIES = ['Berlin', 'Munich', 'Frankfurt', 'Hamburg', 'Cologne', 'Stuttgart', 'Düsseldorf'];
 const VISA_TYPES = [
@@ -59,7 +60,15 @@ export const CreateLeadModal = ({ open, onClose, onSave, advisors = [], saving }
               <TextField label="First Name" value={formData.firstName} onChange={(e) => handleChange('firstName', e.target.value)} required fullWidth size="small" />
               <TextField label="Last Name" value={formData.lastName} onChange={(e) => handleChange('lastName', e.target.value)} fullWidth size="small" />
               <TextField label="Email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required fullWidth size="small" />
-              <TextField label="Phone" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} fullWidth size="small" />
+              <PhoneInputField
+                id="create-lead-phone"
+                name="phone"
+                label="Phone"
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                fullWidth
+                size="small"
+              />
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>

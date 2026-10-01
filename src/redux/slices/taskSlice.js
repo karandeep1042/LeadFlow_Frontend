@@ -1,14 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchTasks, createTask, completeTask, updateTask, deleteTask } from '../thunks/taskThunk';
+import { fetchTasks, fetchTaskAnalytics, createTask, completeTask, updateTask, deleteTask } from '../thunks/taskThunk';
 
 const initialState = {
   tasks: [],
-  activeTab: 'all', // 'all' | 'overdue' | 'due_today' | 'upcoming' | 'completed'
+  analytics: null,
+  activeTab: 'all', // 'all' | 'overdue' | 'due_today' | 'upcoming' | 'completed' | 'archive'
   searchQuery: '',
   priorityFilter: 'all', // 'all' | 'high' | 'medium' | 'low'
   advisorFilter: 'all', // 'all' | advisorId | 'unassigned'
   sortBy: 'due_soonest', // 'due_soonest' | 'most_overdue' | 'priority' | 'newest'
   loading: false,
+  analyticsLoading: false,
   actionLoading: false,
   error: null,
 };
@@ -66,6 +68,18 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Fetch Analytics
+      .addCase(fetchTaskAnalytics.pending, (state) => {
+        state.analyticsLoading = true;
+      })
+      .addCase(fetchTaskAnalytics.fulfilled, (state, action) => {
+        state.analyticsLoading = false;
+        state.analytics = action.payload.data || action.payload;
+      })
+      .addCase(fetchTaskAnalytics.rejected, (state) => {
+        state.analyticsLoading = false;
+      })
+
       // Create Task
       .addCase(createTask.pending, (state) => {
         state.actionLoading = true;
@@ -114,6 +128,7 @@ const taskSlice = createSlice({
       });
   },
 });
+
 
 export const {
   clearTaskError,

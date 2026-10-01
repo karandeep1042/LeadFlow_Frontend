@@ -9,6 +9,7 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  InputAdornment,
 } from '@mui/material';
 import {
   Search,
@@ -48,8 +49,8 @@ export const PipelineFilterToolbar = ({
         border: '1px solid #e2e8f0',
         boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
         display: 'flex',
-        flexDirection: { xs: 'column', lg: 'row' },
-        alignItems: { xs: 'stretch', lg: 'center' },
+        flexDirection: 'column',
+        alignItems: 'stretch',
         justifyContent: 'space-between',
         gap: 2,
       }}
@@ -58,8 +59,8 @@ export const PipelineFilterToolbar = ({
       <Box
         sx={{
           display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'stretch', sm: 'center' },
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
           gap: 1.5,
           flex: { xs: '1 1 auto', lg: '0 1 auto' },
         }}
@@ -69,16 +70,24 @@ export const PipelineFilterToolbar = ({
           placeholder="Search by client name, email, city..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          InputProps={{
-            startAdornment: <Search size={16} color="#94a3b8" style={{ marginRight: 8 }} />,
-            endAdornment: searchQuery ? (
-              <IconButton size="small" onClick={() => onSearchChange('')} sx={{ p: 0.5 }}>
-                <X size={14} color="#94a3b8" />
-              </IconButton>
-            ) : null,
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={16} color="#94a3b8" />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery ? (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => onSearchChange('')} sx={{ p: 0.5 }}>
+                    <X size={14} color="#94a3b8" />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
+            },
           }}
           sx={{
-            width: { xs: '100%', sm: 280, md: 320 },
+            width: { xs: '100%', md: "80%" },
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
               backgroundColor: '#f8fafc',
@@ -122,8 +131,14 @@ export const PipelineFilterToolbar = ({
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          flexWrap: 'wrap',
-          justifyContent: { xs: 'flex-start', lg: 'flex-end' },
+          flexWrap: { xs: 'nowrap', lg: 'wrap' },
+          justifyContent: 'flex-start',
+          overflowX: { xs: 'auto', lg: 'visible' },
+          pb: { xs: 0.5, lg: 0 },
+          WebkitOverflowScrolling: 'touch',
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
         <Chip
@@ -133,7 +148,7 @@ export const PipelineFilterToolbar = ({
           variant={tagFilter === 'all' ? 'filled' : 'outlined'}
           color={tagFilter === 'all' ? 'primary' : 'default'}
           onClick={() => onTagFilterChange('all')}
-          sx={{ fontWeight: 700, borderRadius: 2, height: 32 }}
+          sx={{ fontWeight: 700, borderRadius: 2, height: 32, flexShrink: 0 }}
         />
 
         <Chip
@@ -143,7 +158,7 @@ export const PipelineFilterToolbar = ({
           variant={tagFilter === 'high_value' ? 'filled' : 'outlined'}
           color={tagFilter === 'high_value' ? 'success' : 'default'}
           onClick={() => onTagFilterChange('high_value')}
-          sx={{ fontWeight: 700, borderRadius: 2, height: 32 }}
+          sx={{ fontWeight: 700, borderRadius: 2, height: 32, flexShrink: 0 }}
         />
 
         <Chip
@@ -153,7 +168,7 @@ export const PipelineFilterToolbar = ({
           variant={tagFilter === 'duplicates' ? 'filled' : 'outlined'}
           color={tagFilter === 'duplicates' ? 'error' : 'default'}
           onClick={() => onTagFilterChange('duplicates')}
-          sx={{ fontWeight: 700, borderRadius: 2, height: 32 }}
+          sx={{ fontWeight: 700, borderRadius: 2, height: 32, flexShrink: 0 }}
         />
 
         <Chip
@@ -163,7 +178,7 @@ export const PipelineFilterToolbar = ({
           variant={tagFilter === 'blue_card' ? 'filled' : 'outlined'}
           color={tagFilter === 'blue_card' ? 'primary' : 'default'}
           onClick={() => onTagFilterChange('blue_card')}
-          sx={{ fontWeight: 700, borderRadius: 2, height: 32 }}
+          sx={{ fontWeight: 700, borderRadius: 2, height: 32, flexShrink: 0 }}
         />
 
         {isFiltered && (
