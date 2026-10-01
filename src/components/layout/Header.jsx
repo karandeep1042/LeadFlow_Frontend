@@ -41,6 +41,7 @@ import {
 import { useSocket } from '../../hooks/useSocket';
 import { ROUTES } from '../../utils/constants/routes';
 import NotificationCenter from './NotificationCenter';
+import leadflowLogoWithoutLabel from '../../assets/leadflow-logo-without-label.png';
 
 export const Header = ({ onMobileNavToggle }) => {
   const navigate = useNavigate();
@@ -56,10 +57,10 @@ export const Header = ({ onMobileNavToggle }) => {
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    if (isAuthenticated || user) {
+    if (isAuthenticated) {
       dispatch(fetchNotifications());
     }
-  }, [dispatch, isAuthenticated, user]);
+  }, [dispatch, isAuthenticated]);
 
   const handleProfileOpen = (e) => setProfileAnchorEl(e.currentTarget);
   const handleProfileClose = () => setProfileAnchorEl(null);
@@ -151,9 +152,14 @@ export const Header = ({ onMobileNavToggle }) => {
   const roleMeta = getRoleBadge();
   const RoleIcon = roleMeta.icon;
 
+  const portalBrokerage = useSelector((state) => state.client?.portalData?.brokerage);
+  const portalLeadBrokerage = useSelector((state) => state.client?.portalData?.lead?.brokerageId);
+
   const organizationName =
     user?.brokerage?.name ||
     user?.brokerageName ||
+    (typeof portalBrokerage === 'string' ? portalBrokerage : portalBrokerage?.name) ||
+    (typeof portalLeadBrokerage === 'object' ? portalLeadBrokerage?.name : null) ||
     (role === 'platform_admin' ? 'Global SaaS Platform' : 'HypoExpat Berlin GmbH');
 
   return (
@@ -175,6 +181,20 @@ export const Header = ({ onMobileNavToggle }) => {
           <MenuIcon size={22} />
         </IconButton>
 
+        <Box
+          component="img"
+          src={leadflowLogoWithoutLabel}
+          alt="LeadFlow"
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            width: 28,
+            height: 28,
+            borderRadius: '6px',
+            objectFit: 'contain',
+            flexShrink: 0,
+          }}
+        />
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, minWidth: 0, flexShrink: 1 }}>
           <Tooltip title={organizationName} arrow>
             <Chip
@@ -189,8 +209,8 @@ export const Header = ({ onMobileNavToggle }) => {
                 height: { xs: 29, sm: 32 },
                 border: '1px solid #e2e8f0',
                 borderRadius: '8px',
-                display: role === 'client' ? { xs: 'none', sm: 'inline-flex' } : 'inline-flex',
-                maxWidth: { xs: 165, sm: 260, md: 360 },
+                display: 'inline-flex',
+                maxWidth: { xs: 155, sm: 260, md: 360 },
                 cursor: 'default',
                 '& .MuiChip-label': {
                   px: { xs: 0.75, sm: 1 },
@@ -313,6 +333,28 @@ export const Header = ({ onMobileNavToggle }) => {
                 </Typography>
               </Box>
             </Box>
+
+            <Divider sx={{ my: 0.75 }} />
+            <MenuItem
+              onClick={() => {
+                handleProfileClose();
+                navigate(ROUTES.PROFILE);
+              }}
+              sx={{
+                borderRadius: '8px',
+                py: 0.85,
+                color: '#1e293b',
+                '&:hover': { backgroundColor: '#f1f5f9' },
+              }}
+            >
+              <ListItemIcon sx={{ color: '#2563eb', minWidth: 32 }}>
+                <User size={16} />
+              </ListItemIcon>
+              <ListItemText
+                primary="My Profile & Security"
+                primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }}
+              />
+            </MenuItem>
 
             {user?.workspaces && user.workspaces.length > 1 && (
               <>

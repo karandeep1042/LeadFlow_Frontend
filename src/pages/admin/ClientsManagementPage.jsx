@@ -12,7 +12,6 @@ import {
   ShieldAlert, ShieldCheck, FileCheck, Sparkles,
   CheckCircle2, AlertCircle, Mail, Phone, MapPin,
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import ClientStatusModal from './components/ClientStatusModal';
 import { ROUTES } from '../../utils/constants/routes';
 import { fetchClients, toggleClientStatus } from '../../redux/thunks/clientThunk';
@@ -99,7 +98,7 @@ export const ClientsManagementPage = () => {
   const suspendedCount = useMemo(() => clients.filter((c) => c.status === 'suspended').length, [clients]);
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Header */}
       <Box
         sx={{
@@ -721,7 +720,7 @@ export const ClientsManagementPage = () => {
         onConfirm={handleConfirmStatusToggle}
         loading={Boolean(updatingId)}
       />
-    </DashboardLayout>
+    </Box>
   );
 };
 

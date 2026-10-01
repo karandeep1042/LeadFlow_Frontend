@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import leadflowLogo from '../../assets/leadflow-logo.png';
 import { ROUTES } from '../../utils/constants/routes';
 
 export const UnauthorizedPage = () => {
@@ -30,6 +31,21 @@ export const UnauthorizedPage = () => {
         }}
       >
         <Box
+          component="img"
+          src={leadflowLogo}
+          alt="LeadFlow"
+          sx={{
+            height: 38,
+            width: 'auto',
+            maxWidth: '100%',
+            objectFit: 'contain',
+            mx: 'auto',
+            mb: 3,
+            display: 'block',
+          }}
+        />
+
+        <Box
           sx={{
             width: 64,
             height: 64,
@@ -40,7 +56,7 @@ export const UnauthorizedPage = () => {
             alignItems: 'center',
             justifyContent: 'center',
             mx: 'auto',
-            mb: 3,
+            mb: 2.5,
           }}
         >
           <ShieldAlert size={32} />

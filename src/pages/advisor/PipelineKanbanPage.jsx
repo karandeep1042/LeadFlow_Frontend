@@ -2,7 +2,6 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { Box, Typography, Button, Chip, Alert, Snackbar, CircularProgress, Tabs, Tab, IconButton, Tooltip, useTheme, useMediaQuery } from '@mui/material';
 import { Plus, RefreshCw, CheckCircle2, AlertCircle, AlertTriangle, Info, LayoutGrid, FolderArchive } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import PipelineMetricsBar from './components/PipelineMetricsBar';
 import PipelineFilterToolbar from './components/PipelineFilterToolbar';
 import PipelineKanbanBoard from './components/PipelineKanbanBoard';
@@ -80,7 +79,7 @@ export const PipelineKanbanPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <Box>
       <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: { xs: 1.5, md: 2 } }}>
         <Box sx={{ width: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
@@ -331,7 +330,7 @@ export const PipelineKanbanPage = () => {
           saving={savingLead}
         />
       )}
-    </DashboardLayout>
+    </Box>
   );
 };
 

@@ -44,3 +44,20 @@ export const toggleAdvisorStatus = createAsyncThunk(
     }
   }
 );
+
+export const deleteAdvisor = createAsyncThunk(
+  'team/deleteAdvisor',
+  async ({ advisorId, reassignToAdvisorId }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.delete(`/api/team/advisors/${advisorId}`, {
+        data: { reassignToAdvisorId },
+      });
+      return { advisorId, reassignToAdvisorId, data: response.data };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || 'Failed to delete advisor.'
+      );
+    }
+  }
+);
+

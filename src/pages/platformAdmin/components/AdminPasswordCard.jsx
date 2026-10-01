@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import {
-  Box, Typography, Paper, Button, TextField, Chip, Stack, Alert, CircularProgress,
+  Box, Typography, Paper, Button, TextField, Chip, Stack, Alert, CircularProgress, IconButton, InputAdornment,
 } from '@mui/material';
-import { Key } from 'lucide-react';
+import { Key, Eye, EyeOff, Lock, KeyRound } from 'lucide-react';
 import { updateSuperAdminPassword } from '../../../redux/thunks/tenantThunk';
 
 export default function AdminPasswordCard() {
   const dispatch = useDispatch();
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [notice, setNotice] = useState({ error: '', success: '' });
   const [loading, setLoading] = useState(false);
 
@@ -51,9 +54,102 @@ export default function AdminPasswordCard() {
           {notice.error && <Alert severity="error" sx={{ borderRadius: 2 }}>{notice.error}</Alert>}
           {notice.success && <Alert severity="success" sx={{ borderRadius: 2 }}>{notice.success}</Alert>}
 
-          <TextField label="Current Master Password *" type="password" size="small" fullWidth required value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} />
-          <TextField label="New Master Password *" type="password" size="small" fullWidth required value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
-          <TextField label="Confirm New Password *" type="password" size="small" fullWidth required value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+          <TextField
+            label="Current Master Password *"
+            type={showCurrentPassword ? 'text' : 'password'}
+            size="small"
+            fullWidth
+            required
+            value={form.currentPassword}
+            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <KeyRound size={16} style={{ color: '#94a3b8' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowCurrentPassword((prev) => !prev)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      edge="end"
+                      size="small"
+                      aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                      sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a' } }}
+                    >
+                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <TextField
+            label="New Master Password *"
+            type={showNewPassword ? 'text' : 'password'}
+            size="small"
+            fullWidth
+            required
+            value={form.newPassword}
+            onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock size={16} style={{ color: '#94a3b8' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      edge="end"
+                      size="small"
+                      aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                      sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a' } }}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <TextField
+            label="Confirm New Password *"
+            type={showConfirmPassword ? 'text' : 'password'}
+            size="small"
+            fullWidth
+            required
+            value={form.confirmPassword}
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock size={16} style={{ color: '#94a3b8' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      edge="end"
+                      size="small"
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a' } }}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
             <Button

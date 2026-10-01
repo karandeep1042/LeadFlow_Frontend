@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Box, Drawer, Typography, List, ListItem, ListItemButton,
   ListItemIcon, ListItemText, Chip, Avatar, IconButton, Divider, Tooltip,
 } from '@mui/material';
-import { Layers, Building2, LogOut } from 'lucide-react';
+import { Building2, LogOut } from 'lucide-react';
+import leadflowLogoWithoutLabel from '../../assets/leadflow-logo-without-label.png';
 import { getRoleNavigation } from '../../utils/navigation/navigationConfig';
 import { logoutUser } from '../../redux/thunks/authThunk';
+import { startNavigationProgress } from '../common/TopProgressBar';
 import { ROUTES } from '../../utils/constants/routes';
 
 const SIDEBAR_WIDTH = 260;
@@ -18,11 +20,18 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
   const dispatch = useDispatch();
   const { user, role } = useSelector((state) => state.auth);
 
-  const sections = getRoleNavigation(role);
+  const sections = useMemo(() => getRoleNavigation(role), [role]);
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
     navigate(ROUTES.SIGNIN);
+  };
+
+  const handleItemClick = () => {
+    startNavigationProgress();
+    if (mobileOpen && onMobileClose) {
+      onMobileClose();
+    }
   };
 
   const organizationName =
@@ -33,9 +42,19 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
   const renderContent = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box sx={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', flexShrink: 0 }}>
-          <Layers size={20} />
-        </Box>
+        <Box
+          component="img"
+          src={leadflowLogoWithoutLabel}
+          alt="LeadFlow"
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: '10px',
+            objectFit: 'contain',
+            flexShrink: 0,
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)',
+          }}
+        />
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>LeadFlow</Typography>
           <Typography variant="caption" sx={{ color: '#2563eb', fontWeight: 700, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }}>
@@ -59,13 +78,21 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
                     <ListItemButton
                       component={RouterLink}
                       to={item.path}
-                      onClick={() => { if (mobileOpen && onMobileClose) onMobileClose(); }}
+                      disableRipple
+                      disableTouchRipple
+                      onPointerDown={() => startNavigationProgress()}
+                      onClick={handleItemClick}
                       sx={{
                         borderRadius: 2,
                         py: 0.85,
                         px: 1.5,
                         backgroundColor: isActive ? '#eff6ff' : 'transparent',
                         color: isActive ? '#2563eb' : '#475569',
+                        transition: 'background-color 0.1s ease, color 0.1s ease',
+                        '&:hover': {
+                          backgroundColor: isActive ? '#eff6ff' : '#f8fafc',
+                          color: isActive ? '#2563eb' : '#0f172a',
+                        },
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 30, color: isActive ? '#2563eb' : '#64748b' }}>
@@ -106,10 +133,19 @@ export const Sidebar = ({ mobileOpen, onMobileClose }) => {
 
   return (
     <>
-      <Drawer variant="temporary" open={mobileOpen} onClose={onMobileClose} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH } }}>
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        sx={{ display: { xs: 'block', md: 'none' }, '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH } }}
+      >
         {renderContent()}
       </Drawer>
-      <Drawer variant="permanent" sx={{ display: { xs: 'none', md: 'block' }, width: SIDEBAR_WIDTH, flexShrink: 0, '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH } }} open>
+      <Drawer
+        variant="permanent"
+        sx={{ display: { xs: 'none', md: 'block' }, width: SIDEBAR_WIDTH, flexShrink: 0, '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH } }}
+        open
+      >
         {renderContent()}
       </Drawer>
     </>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { ShieldCheck, Zap, Layers } from 'lucide-react';
+import leadflowLogoWithoutLabel from '../../assets/leadflow-logo-without-label.png';
 
 export const AuthLeftBanner = ({
   headline = 'Hello LeadFlow!',
@@ -55,26 +56,25 @@ export const AuthLeftBanner = ({
             width: 64,
             height: 64,
             borderRadius: '18px',
-            backgroundColor: 'rgba(255, 255, 255, 0.14)',
+            backgroundColor: 'rgba(255, 255, 255, 0.16)',
             backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.28)',
             boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
             mb: 3,
+            p: 1.25,
+            overflow: 'hidden',
           }}
         >
-          <svg
-            width="36"
-            height="36"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ color: '#ffffff' }}
-          >
-            <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" />
-          </svg>
+          <Box
+            component="img"
+            src={leadflowLogoWithoutLabel}
+            alt="LeadFlow"
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
+          />
         </Box>
       </Box>
 

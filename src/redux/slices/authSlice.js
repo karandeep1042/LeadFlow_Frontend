@@ -5,6 +5,7 @@ import {
   registerBrokerage,
   fetchCurrentUser,
   updateAdminProfile,
+  updateUserProfile,
   logoutUser,
   forgotPassword,
   resetPassword,
@@ -193,10 +194,27 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = {
           ...state.user,
-          ...(action.payload.data || action.payload),
+          ...(action.payload.data || action.payload.user || action.payload),
         };
       })
       .addCase(updateAdminProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Update User Profile (Universal for all roles)
+      .addCase(updateUserProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = {
+          ...state.user,
+          ...(action.payload.data || action.payload.user || action.payload),
+        };
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

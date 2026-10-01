@@ -10,7 +10,6 @@ import { GERMAN_MORTGAGE_CATEGORIES, CHECKLIST_DEFINITIONS } from '../../utils/c
 import DocumentDropzone from './components/DocumentDropzone';
 import DocumentItemRow from './components/DocumentItemRow';
 import ClientDocumentPreviewModal from './components/ClientDocumentPreviewModal';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const ClientDocumentsPage = () => {
   const dispatch = useDispatch();
@@ -89,7 +88,7 @@ const ClientDocumentsPage = () => {
   const list = tab === 'all' ? CHECKLIST_DEFINITIONS : CHECKLIST_DEFINITIONS.filter((d) => d.category === tab);
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Sleek, Compact Header Toolbar */}
       <Box
         sx={{
@@ -306,7 +305,7 @@ const ClientDocumentsPage = () => {
           {toast?.message}
         </Alert>
       </Snackbar>
-    </DashboardLayout>
+    </Box>
   );
 };
 

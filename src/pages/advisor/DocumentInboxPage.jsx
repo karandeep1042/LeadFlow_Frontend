@@ -4,7 +4,6 @@ import {
   Box, Typography, Button, IconButton, Tooltip, Snackbar, Alert, Chip,
 } from '@mui/material';
 import { RefreshCw, Zap } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import DocumentMetricsBar from './components/DocumentMetricsBar';
 import DocumentFilterToolbar from './components/DocumentFilterToolbar';
 import DocumentTable from './components/DocumentTable';
@@ -96,7 +95,7 @@ export const DocumentInboxPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Top Header */}
       <Box
         sx={{
@@ -282,7 +281,7 @@ export const DocumentInboxPage = () => {
             {toast.message}
           </Alert>
         </Snackbar>
-    </DashboardLayout>
+    </Box>
   );
 };
 

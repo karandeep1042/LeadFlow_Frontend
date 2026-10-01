@@ -37,9 +37,13 @@ import DocumentInboxPage from './pages/advisor/DocumentInboxPage';
 import ClientPortalDashboard from './pages/client/ClientPortalDashboard';
 import ClientDocumentsPage from './pages/client/ClientDocumentsPage';
 
+// Profile Page (Universal across all roles)
+import ProfilePage from './pages/profile/ProfilePage';
 
 // Common / Layouts
 import ProtectedRoute from './components/common/ProtectedRoute';
+import DashboardLayout from './components/layout/DashboardLayout';
+import TopProgressBar from './components/common/TopProgressBar';
 import RoleDashboardPlaceholder from './pages/dashboard/RoleDashboardPlaceholder';
 
 function App() {
@@ -60,6 +64,9 @@ function App() {
     <ThemeProvider theme={leadflowTheme}>
       <CssBaseline />
       <BrowserRouter>
+        {/* YouTube-style glowing top progress bar on navigation transitions */}
+        <TopProgressBar />
+
         <Routes>
           {/* Public / Auth Routes */}
           <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.SIGNIN} replace />} />
@@ -70,43 +77,51 @@ function App() {
           <Route path={ROUTES.SET_INITIAL_PASSWORD} element={<SetInitialPasswordPage />} />
           <Route path={ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
 
-          {/* Protected Platform Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['platform_admin']} />}>
-            <Route path={ROUTES.PLATFORM_ADMIN_TENANTS} element={<TenantsManagementPage />} />
-            <Route path={ROUTES.PLATFORM_ADMIN_ANALYTICS} element={<PlatformAnalyticsPage />} />
-            <Route path={ROUTES.PLATFORM_ADMIN_EMAIL_TEMPLATES} element={<PlatformEmailTemplatesPage />} />
-            <Route path={ROUTES.PLATFORM_ADMIN_SETTINGS} element={<GlobalSettingsPage />} />
-          </Route>
+          {/* Persistent Authenticated Dashboard Shell Layout */}
+          <Route element={<DashboardLayout />}>
+            {/* Protected Platform Admin Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['platform_admin']} />}>
+              <Route path={ROUTES.PLATFORM_ADMIN_TENANTS} element={<TenantsManagementPage />} />
+              <Route path={ROUTES.PLATFORM_ADMIN_ANALYTICS} element={<PlatformAnalyticsPage />} />
+              <Route path={ROUTES.PLATFORM_ADMIN_EMAIL_TEMPLATES} element={<PlatformEmailTemplatesPage />} />
+              <Route path={ROUTES.PLATFORM_ADMIN_SETTINGS} element={<GlobalSettingsPage />} />
+            </Route>
 
-          {/* Protected Brokerage Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['brokerage_admin']} />}>
-            <Route path={ROUTES.BROKERAGE_ADMIN_DASHBOARD} element={<BrokerageAdminDashboard />} />
-            <Route path={ROUTES.BROKERAGE_ADMIN_TEAM} element={<TeamManagementPage />} />
-            <Route path={ROUTES.BROKERAGE_ADMIN_CLIENTS} element={<ClientsManagementPage />} />
-            <Route path={ROUTES.BROKERAGE_ADMIN_INTEGRATIONS} element={<IntegrationsPage />} />
-            <Route path={ROUTES.BROKERAGE_ADMIN_AUTOMATIONS} element={<AutomationsPage />} />
-          </Route>
+            {/* Protected Brokerage Admin Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['brokerage_admin']} />}>
+              <Route path={ROUTES.BROKERAGE_ADMIN_DASHBOARD} element={<BrokerageAdminDashboard />} />
+              <Route path={ROUTES.BROKERAGE_ADMIN_TEAM} element={<TeamManagementPage />} />
+              <Route path={ROUTES.BROKERAGE_ADMIN_CLIENTS} element={<ClientsManagementPage />} />
+              <Route path={ROUTES.BROKERAGE_ADMIN_INTEGRATIONS} element={<IntegrationsPage />} />
+              <Route path={ROUTES.BROKERAGE_ADMIN_AUTOMATIONS} element={<AutomationsPage />} />
+            </Route>
 
-          {/* Protected Advisor Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['advisor', 'brokerage_admin']} />}>
-            <Route
-              path={ROUTES.ADVISOR_PIPELINE}
-              element={<PipelineKanbanPage />}
-            />
-            <Route
-              path={ROUTES.ADVISOR_TASKS}
-              element={<TasksManagementPage />}
-            />
-            <Route
-              path={ROUTES.ADVISOR_DOCUMENTS}
-              element={<DocumentInboxPage />}
-            />
-          </Route>
+            {/* Protected Advisor Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['advisor', 'brokerage_admin']} />}>
+              <Route
+                path={ROUTES.ADVISOR_PIPELINE}
+                element={<PipelineKanbanPage />}
+              />
+              <Route
+                path={ROUTES.ADVISOR_TASKS}
+                element={<TasksManagementPage />}
+              />
+              <Route
+                path={ROUTES.ADVISOR_DOCUMENTS}
+                element={<DocumentInboxPage />}
+              />
+            </Route>
 
-          {/* Protected Client Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['client', 'brokerage_admin', 'advisor']} />}>
-            <Route path={ROUTES.CLIENT_PORTAL} element={<ClientPortalDashboard />} />
-            <Route path={ROUTES.CLIENT_DOCUMENTS} element={<ClientDocumentsPage />} />
+            {/* Protected Client Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['client', 'brokerage_admin', 'advisor']} />}>
+              <Route path={ROUTES.CLIENT_PORTAL} element={<ClientPortalDashboard />} />
+              <Route path={ROUTES.CLIENT_DOCUMENTS} element={<ClientDocumentsPage />} />
+            </Route>
+
+            {/* Protected Universal Profile Route */}
+            <Route element={<ProtectedRoute allowedRoles={['brokerage_admin', 'advisor', 'client', 'platform_admin']} />}>
+              <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+            </Route>
           </Route>
 
           {/* Catch-all */}

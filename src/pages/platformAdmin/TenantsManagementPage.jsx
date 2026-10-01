@@ -4,7 +4,6 @@ import {
   Box, Typography, Button, TextField, InputAdornment, Stack, Chip,
 } from '@mui/material';
 import { Building2, Search, Plus, RefreshCw } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
   fetchTenants,
   createTenant,
@@ -48,7 +47,7 @@ export default function TenantsManagementPage() {
   const curId = selectedTenant?._id || selectedTenant?.id;
 
   return (
-    <DashboardLayout>
+    <Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 6 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
@@ -163,6 +162,6 @@ export default function TenantsManagementPage() {
         <EditTenantModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} tenant={selectedTenant} onSave={(d) => { dispatch(updateTenantDetails({ tenantId: curId, ...d })); setIsEditOpen(false); }} />
         <TenantMetricsDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} tenant={selectedTenant} metrics={selectedTenantMetrics} />
       </Box>
-    </DashboardLayout>
+    </Box>
   );
 }

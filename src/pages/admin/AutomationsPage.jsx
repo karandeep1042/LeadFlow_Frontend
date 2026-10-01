@@ -6,7 +6,6 @@ import {
   IconButton,
 } from '@mui/material';
 import { Zap, CheckCircle2, AlertCircle, RefreshCw, Mail, Edit, Eye } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import StageTriggerCard from './components/StageTriggerCard';
 import AutomationEditModal from './components/AutomationEditModal';
 import EmailPreviewModal from './components/EmailPreviewModal';
@@ -110,7 +109,7 @@ export const AutomationsPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <Box>
       <Box sx={{ mb: { xs: 2.5, md: 3.5 }, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
         <Box sx={{ width: { xs: '100%', md: 'auto' } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mb: 0.5 }}>
@@ -378,7 +377,7 @@ export const AutomationsPage = () => {
           saving={saving}
         />
       )}
-    </DashboardLayout>
+    </Box>
   );
 };
 

@@ -11,7 +11,6 @@ import {
   ArrowRight, Radio, Sparkles, Kanban, RefreshCw, Clock,
   AlertTriangle,
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import { ROUTES } from '../../utils/constants/routes';
 import { fetchBrokerageDashboard } from '../../redux/thunks/brokerageDashboardThunk';
 import { clearDashboardError } from '../../redux/slices/brokerageDashboardSlice';
@@ -115,7 +114,7 @@ export const BrokerageAdminDashboard = () => {
   ];
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Top Header */}
       <Box
         sx={{
@@ -804,7 +803,7 @@ export const BrokerageAdminDashboard = () => {
                   ) : advisors.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} align="center" sx={{ py: 3, color: '#64748b' }}>
-                        No advisors added yet. Click "+ Invite Advisor" to get started.
+                        No advisors added yet. Click "Invite Advisor" to get started.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1222,7 +1221,7 @@ export const BrokerageAdminDashboard = () => {
           </Paper>
         </Stack>
       </Box>
-    </DashboardLayout>
+    </Box>
   );
 };
 
