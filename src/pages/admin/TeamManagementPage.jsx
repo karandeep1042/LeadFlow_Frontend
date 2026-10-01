@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   Box, Typography, Paper, Button, Chip, Avatar, Table,
   TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -9,16 +9,22 @@ import {
 } from '@mui/material';
 import {
   UserPlus, Mail, Phone, CheckCircle2, AlertTriangle, Search,
-  RefreshCw, Users, ShieldCheck, ShieldAlert, TrendingUp, Briefcase,
+  RefreshCw, Users, ShieldCheck, ShieldAlert, TrendingUp, Briefcase, Trash2,
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import PhoneInputField from '../../components/common/PhoneInputField';
+import ModernSwitch from '../../components/common/ModernSwitch';
+import DeleteAdvisorModal from './components/DeleteAdvisorModal';
+import {
+  fetchAdvisors,
+  inviteAdvisor,
+  toggleAdvisorStatus,
+} from '../../redux/thunks/teamThunk';
 import teamApi from '../../services/api/teamApi';
 
 export const TeamManagementPage = () => {
+  const dispatch = useDispatch();
   const { user: currentUser } = useSelector((state) => state.auth);
-  const [advisors, setAdvisors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { advisors, loading } = useSelector((state) => state.team);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -28,24 +34,17 @@ export const TeamManagementPage = () => {
   const [successBanner, setSuccessBanner] = useState('');
   const [errorBanner, setErrorBanner] = useState('');
 
-  const fetchAdvisorsList = async () => {
-    try {
-      setLoading(true);
-      setErrorBanner('');
-      const res = await teamApi.getAdvisors();
-      if (res?.data?.advisors) {
-        setAdvisors(res.data.advisors);
-      }
-    } catch (err) {
-      setErrorBanner(err.response?.data?.message || 'Failed to load mortgage advisors.');
-    } finally {
-      setLoading(false);
-    }
+  // Delete advisor modal states
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [selectedAdvisorForDelete, setSelectedAdvisorForDelete] = useState(null);
+
+  const fetchAdvisorsList = () => {
+    dispatch(fetchAdvisors());
   };
 
   useEffect(() => {
     fetchAdvisorsList();
-  }, []);
+  }, [dispatch]);
 
   const handleOpenInvite = () => {
     setNewAdvisor({ name: '', email: '', phone: '' });
@@ -86,25 +85,26 @@ export const TeamManagementPage = () => {
       setSubmitting(true);
       setFormError('');
 
-      const res = await teamApi.inviteAdvisor({
-        name: newAdvisor.name.trim(),
-        email: newAdvisor.email.trim().toLowerCase(),
-        phone: newAdvisor.phone ? newAdvisor.phone.trim() : undefined,
-      });
+      const resAction = await dispatch(
+        inviteAdvisor({
+          name: newAdvisor.name.trim(),
+          email: newAdvisor.email.trim().toLowerCase(),
+          phone: newAdvisor.phone ? newAdvisor.phone.trim() : undefined,
+        })
+      );
 
-      if (res?.success) {
+      if (inviteAdvisor.fulfilled.match(resAction)) {
         setSuccessBanner(
           `Invitation dispatched! An onboarding email with login credentials was sent to ${newAdvisor.email.trim()}.`
         );
-        if (res.data) setAdvisors((prev) => [res.data, ...prev]);
-        else fetchAdvisorsList();
-
         setOpenInvite(false);
         setNewAdvisor({ name: '', email: '', phone: '' });
         setTimeout(() => setSuccessBanner(''), 7000);
+      } else {
+        setFormError(resAction.payload || 'Failed to send invitation. Please try again.');
       }
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to send invitation. Please try again.');
+      setFormError(err?.message || 'Failed to send invitation. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -113,16 +113,25 @@ export const TeamManagementPage = () => {
   const handleToggleStatus = async (advisor) => {
     const nextStatus = advisor.status === 'active' ? 'suspended' : 'active';
     try {
-      await teamApi.updateAdvisorStatus(advisor.id || advisor._id, nextStatus);
-      setAdvisors((prev) =>
-        prev.map((a) =>
-          (a.id || a._id) === (advisor.id || advisor._id) ? { ...a, status: nextStatus } : a
-        )
+      const resAction = await dispatch(
+        toggleAdvisorStatus({
+          advisorId: advisor.id || advisor._id,
+          status: nextStatus,
+        })
       );
-      setSuccessBanner(nextStatus === 'suspended' ? `Advisor account "${advisor.name}" has been suspended.` : `Advisor account "${advisor.name}" has been reactivated.`);
-      setTimeout(() => setSuccessBanner(''), 4000);
+      if (toggleAdvisorStatus.fulfilled.match(resAction)) {
+        setSuccessBanner(
+          nextStatus === 'suspended'
+            ? `Advisor account "${advisor.name}" has been suspended.`
+            : `Advisor account "${advisor.name}" has been reactivated.`
+        );
+        setTimeout(() => setSuccessBanner(''), 4000);
+      } else {
+        setErrorBanner(resAction.payload || 'Failed to update advisor status.');
+        setTimeout(() => setErrorBanner(''), 4000);
+      }
     } catch (err) {
-      setErrorBanner(err.response?.data?.message || 'Failed to update advisor status.');
+      setErrorBanner(err.message || 'Failed to update advisor status.');
       setTimeout(() => setErrorBanner(''), 4000);
     }
   };
@@ -140,7 +149,7 @@ export const TeamManagementPage = () => {
   }, [advisors]);
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Header */}
       <Box
         sx={{
@@ -359,7 +368,7 @@ export const TeamManagementPage = () => {
                 </TableRow>
               </TableHead>
             <TableBody>
-              {loading ? (
+              {loading && advisors.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                     <CircularProgress size={32} sx={{ color: '#2563eb' }} />
@@ -370,7 +379,7 @@ export const TeamManagementPage = () => {
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a' }}>No mortgage advisors found</Typography>
-                    <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>{searchTerm ? 'No results matching your query.' : 'Click "+ Invite Advisor" above to add your first mortgage advisor.'}</Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>{searchTerm ? 'No results matching your query.' : 'Click "Invite Advisor" above to add your first mortgage advisor.'}</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -409,9 +418,41 @@ export const TeamManagementPage = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title={isActive ? 'Suspend Access' : 'Activate Access'}>
-                          <Switch size="small" checked={isActive} onChange={() => handleToggleStatus(adv)} color="primary" />
-                        </Tooltip>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5 }}>
+                          <Tooltip title={isActive ? 'Deactivate / Suspend Access' : 'Activate Access'}>
+                            <Box sx={{ display: 'inline-flex' }}>
+                              <ModernSwitch
+                                checked={isActive}
+                                onChange={() => handleToggleStatus(adv)}
+                              />
+                            </Box>
+                          </Tooltip>
+
+                          <Tooltip title="Delete Advisor Account">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setSelectedAdvisorForDelete(adv);
+                                setOpenDeleteModal(true);
+                              }}
+                              sx={{
+                                color: '#94a3b8',
+                                borderRadius: 2,
+                                p: 0.75,
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: '#ffffff',
+                                transition: 'all 0.15s ease',
+                                '&:hover': {
+                                  color: '#dc2626',
+                                  borderColor: '#fca5a5',
+                                  backgroundColor: '#fef2f2',
+                                },
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -424,7 +465,7 @@ export const TeamManagementPage = () => {
 
         {/* Mobile Card View (< sm) */}
         <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', p: 1.5, gap: 1.5 }}>
-          {loading ? (
+          {loading && advisors.length === 0 ? (
             <Stack spacing={1.5}>
               <Skeleton variant="rounded" height={90} sx={{ borderRadius: 2 }} />
               <Skeleton variant="rounded" height={90} sx={{ borderRadius: 2 }} />
@@ -467,7 +508,7 @@ export const TeamManagementPage = () => {
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                       <Chip
                         label={isActive ? 'ACTIVE' : 'SUSPENDED'}
                         size="small"
@@ -479,7 +520,28 @@ export const TeamManagementPage = () => {
                           fontSize: '0.65rem',
                         }}
                       />
-                      <Switch size="small" checked={isActive} onChange={() => handleToggleStatus(adv)} color="primary" />
+                      <ModernSwitch checked={isActive} onChange={() => handleToggleStatus(adv)} />
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setSelectedAdvisorForDelete(adv);
+                          setOpenDeleteModal(true);
+                        }}
+                        sx={{
+                          color: '#94a3b8',
+                          borderRadius: 1.5,
+                          p: 0.5,
+                          border: '1px solid #e2e8f0',
+                          backgroundColor: '#ffffff',
+                          '&:hover': {
+                            color: '#dc2626',
+                            borderColor: '#fca5a5',
+                            backgroundColor: '#fef2f2',
+                          },
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </IconButton>
                     </Box>
                   </Box>
 
@@ -562,7 +624,30 @@ export const TeamManagementPage = () => {
           </DialogActions>
         </form>
       </Dialog>
-    </DashboardLayout>
+
+      {/* Delete Advisor Modal with Lead Reassignment Workflow */}
+      <DeleteAdvisorModal
+        open={openDeleteModal}
+        onClose={() => {
+          setOpenDeleteModal(false);
+          setSelectedAdvisorForDelete(null);
+        }}
+        advisor={selectedAdvisorForDelete}
+        allAdvisors={advisors}
+        onSuccess={({ deletedAdvisor, reassignedCount, targetAdvisor, message }) => {
+          setSuccessBanner(
+            message ||
+              `Advisor "${deletedAdvisor?.name}" was permanently deleted${
+                reassignedCount > 0
+                  ? ` and ${reassignedCount} active lead(s) were reassigned to ${targetAdvisor?.name || 'another advisor'}`
+                  : ''
+              }.`
+          );
+          setTimeout(() => setSuccessBanner(''), 7000);
+          fetchAdvisorsList();
+        }}
+      />
+    </Box>
   );
 };
 

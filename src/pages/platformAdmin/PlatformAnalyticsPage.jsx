@@ -9,7 +9,6 @@ import {
   FileCheck,
   Layers,
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import { fetchPlatformOverviewMetrics } from '../../redux/thunks/tenantThunk';
 import AnalyticsFunnel from './components/AnalyticsFunnel';
 import AnalyticsLeaderboard from './components/AnalyticsLeaderboard';
@@ -73,7 +72,7 @@ export default function PlatformAnalyticsPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 6 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
@@ -141,6 +140,6 @@ export default function PlatformAnalyticsPage() {
         {/* Leaderboard */}
         <AnalyticsLeaderboard leaderboard={leaderboard} />
       </Box>
-    </DashboardLayout>
+    </Box>
   );
 }

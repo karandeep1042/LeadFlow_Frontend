@@ -20,7 +20,6 @@ import {
   Sparkles,
   Layers,
 } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import { logoutUser } from '../../redux/thunks/authThunk';
 import { ROUTES } from '../../utils/constants/routes';
 
@@ -51,7 +50,7 @@ export const RoleDashboardPlaceholder = ({ roleTitle, roleKey, description }) =>
   const BadgeIcon = badge.icon;
 
   return (
-    <DashboardLayout>
+    <Box>
       <Paper
         elevation={0}
         sx={{
@@ -108,7 +107,7 @@ export const RoleDashboardPlaceholder = ({ roleTitle, roleKey, description }) =>
           </Box>
         </Box>
       </Paper>
-    </DashboardLayout>
+    </Box>
   );
 };
 

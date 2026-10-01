@@ -20,7 +20,6 @@ import MortgageRoadmapStepper from './components/MortgageRoadmapStepper';
 import MortgageCaseSummaryCard from './components/MortgageCaseSummaryCard';
 import DocumentProgressCard from './components/DocumentProgressCard';
 import AssignedAdvisorCard from './components/AssignedAdvisorCard';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import { ROUTES } from '../../utils/constants/routes';
 
 const ClientPortalDashboard = () => {
@@ -60,7 +59,7 @@ const ClientPortalDashboard = () => {
   const rejectedDocs = (portalData?.documents || []).filter((d) => d.status === 'rejected');
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Top Banner Header - Android Native Card Style */}
       <Box
         sx={{
@@ -217,7 +216,7 @@ const ClientPortalDashboard = () => {
           </Box>
         </Box>
       </Stack>
-    </DashboardLayout>
+    </Box>
   );
 };
 

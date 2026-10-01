@@ -29,5 +29,8 @@ export const ROUTES = {
   // Client (Borrower)
   CLIENT_PORTAL: '/client/portal',
   CLIENT_DOCUMENTS: '/client/documents',
+
+  // Universal User Profile
+  PROFILE: '/profile',
 };
 

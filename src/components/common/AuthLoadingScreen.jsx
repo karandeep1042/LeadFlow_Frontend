@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Typography, Paper, LinearProgress, CircularProgress } from '@mui/material';
-import { Layers } from 'lucide-react';
+import { Box, Typography, Paper, LinearProgress } from '@mui/material';
+import leadflowLogo from '../../assets/leadflow-logo.png';
 
 export const AuthLoadingScreen = ({ message = 'Verifying secure session...' }) => {
   return (
@@ -31,37 +31,19 @@ export const AuthLoadingScreen = ({ message = 'Verifying secure session...' }) =
           boxShadow: '0 20px 35px -10px rgba(15, 23, 42, 0.08), 0 8px 16px -6px rgba(15, 23, 42, 0.04)',
         }}
       >
-        {/* LeadFlow Brand Logo Badge */}
+        {/* LeadFlow Brand Logo */}
         <Box
+          component="img"
+          src={leadflowLogo}
+          alt="LeadFlow"
           sx={{
-            width: 52,
-            height: 52,
-            borderRadius: '14px',
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff',
-            boxShadow: '0 8px 20px -4px rgba(37, 99, 235, 0.35)',
-            mb: 2,
+            height: 42,
+            width: 'auto',
+            maxWidth: '100%',
+            objectFit: 'contain',
+            mb: 1.5,
           }}
-        >
-          <Layers size={26} />
-        </Box>
-
-        {/* Product Headline */}
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 800,
-            letterSpacing: '-0.025em',
-            color: '#0f172a',
-            fontSize: '1.35rem',
-            lineHeight: 1.2,
-          }}
-        >
-          LeadFlow
-        </Typography>
+        />
 
         {/* Dynamic Status Text */}
         <Typography

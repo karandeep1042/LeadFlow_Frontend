@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Typography, Button, CircularProgress, Snackbar, Alert, Paper, Chip, IconButton, Tooltip } from '@mui/material';
 import { RefreshCw, CheckSquare, Clock, Archive } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
   fetchTasks, fetchTaskAnalytics, completeTask, updateTask, deleteTask,
 } from '../../redux/thunks/taskThunk';
@@ -409,7 +408,7 @@ export const TasksManagementPage = () => {
   });
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Top Header */}
       <Box
         sx={{
@@ -717,7 +716,7 @@ export const TasksManagementPage = () => {
           {toast.message}
         </Alert>
       </Snackbar>
-    </DashboardLayout>
+    </Box>
   );
 };
 

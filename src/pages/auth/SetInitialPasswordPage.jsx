@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
 import NotificationAlert from '../../components/common/NotificationAlert';
+import leadflowLogo from '../../assets/leadflow-logo.png';
 import { setInitialPassword } from '../../redux/thunks/authThunk';
 import { clearAuthError } from '../../redux/slices/authSlice';
 import { ROUTES } from '../../utils/constants/routes';
@@ -150,6 +151,21 @@ export const SetInitialPasswordPage = () => {
         onClose={() => { setToast((p) => ({ ...p, open: false })); dispatch(clearAuthError()); }}
         autoHideDuration={5000}
       />
+      <Box component={RouterLink} to={ROUTES.HOME} sx={{ display: 'inline-block', mb: 3, textDecoration: 'none' }}>
+        <Box
+          component="img"
+          src={leadflowLogo}
+          alt="LeadFlow"
+          sx={{
+            height: { xs: 34, sm: 38 },
+            width: 'auto',
+            maxWidth: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
+      </Box>
+
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, borderRadius: 2, bgcolor: '#eff6ff', color: '#2563eb', mb: 1.5 }}>
           <ShieldCheck size={16} />

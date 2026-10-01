@@ -5,7 +5,6 @@ import {
   CircularProgress, IconButton, Tooltip, Switch,
 } from '@mui/material';
 import { Webhook, Radio, Copy, Check, Edit3, Trash2, RefreshCw } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import WebhookTester from './components/WebhookTester';
 import SourceFormDialog from './components/SourceFormDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
@@ -107,7 +106,7 @@ export const IntegrationsPage = () => {
   }, [sources]);
 
   return (
-    <DashboardLayout>
+    <Box>
       {/* Header */}
       <Box
         sx={{
@@ -488,7 +487,7 @@ export const IntegrationsPage = () => {
         webhookData={latestGeneratedKey}
         onClose={() => dispatch(clearLatestGeneratedKey())}
       />
-    </DashboardLayout>
+    </Box>
   );
 };
 

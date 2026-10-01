@@ -12,6 +12,7 @@ import {
 import { Mail, ArrowLeft } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
 import NotificationAlert from '../../components/common/NotificationAlert';
+import leadflowLogo from '../../assets/leadflow-logo.png';
 import { forgotPassword } from '../../redux/thunks/authThunk';
 import { clearAuthError, resetForgotPasswordState } from '../../redux/slices/authSlice';
 import { ROUTES } from '../../utils/constants/routes';
@@ -92,10 +93,19 @@ export const ForgotPasswordPage = () => {
         autoHideDuration={5000}
       />
 
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" sx={{ fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: '#0f172a' }}>
-          LeadFlow
-        </Typography>
+      <Box component={RouterLink} to={ROUTES.HOME} sx={{ display: 'inline-block', mb: 3.5, textDecoration: 'none' }}>
+        <Box
+          component="img"
+          src={leadflowLogo}
+          alt="LeadFlow"
+          sx={{
+            height: { xs: 34, sm: 38 },
+            width: 'auto',
+            maxWidth: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
       </Box>
 
       <Box sx={{ mb: 3.5 }}>

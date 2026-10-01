@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Container, Paper, useTheme, useMediaQuery, Typography } from '@mui/material';
 import AuthLeftBanner from './AuthLeftBanner';
+import leadflowLogoWithoutLabel from '../../assets/leadflow-logo-without-label.png';
 
 export const AuthLayout = ({
   children,
@@ -62,20 +63,20 @@ export const AuthLayout = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                p: 0.75,
+                overflow: 'hidden',
               }}
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" />
-              </svg>
+              <Box
+                component="img"
+                src={leadflowLogoWithoutLabel}
+                alt="LeadFlow"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
             </Box>
             <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 800, letterSpacing: '-0.02em' }}>
               LeadFlow

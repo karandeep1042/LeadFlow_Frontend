@@ -15,6 +15,7 @@ import {
   FileText,
   BarChart3,
   Mail,
+  User,
 } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 
@@ -78,6 +79,17 @@ export const NAVIGATION_CONFIG = {
         },
       ],
     },
+    {
+      subheader: 'Account & Preferences',
+      items: [
+        {
+          title: 'My Profile & Security',
+          path: ROUTES.PROFILE,
+          icon: User,
+          badge: null,
+        },
+      ],
+    },
   ],
 
   platform_admin: [
@@ -108,6 +120,12 @@ export const NAVIGATION_CONFIG = {
           icon: Settings,
           badge: null,
         },
+        {
+          title: 'My Profile',
+          path: ROUTES.PROFILE,
+          icon: User,
+          badge: null,
+        },
       ],
     },
   ],
@@ -136,6 +154,17 @@ export const NAVIGATION_CONFIG = {
         },
       ],
     },
+    {
+      subheader: 'Account & Profile',
+      items: [
+        {
+          title: 'My Profile & Security',
+          path: ROUTES.PROFILE,
+          icon: User,
+          badge: null,
+        },
+      ],
+    },
   ],
 
   client: [
@@ -153,6 +182,17 @@ export const NAVIGATION_CONFIG = {
           path: ROUTES.CLIENT_DOCUMENTS,
           icon: UploadCloud,
           badge: 'Required',
+        },
+      ],
+    },
+    {
+      subheader: 'Borrower Account',
+      items: [
+        {
+          title: 'My Profile & Security',
+          path: ROUTES.PROFILE,
+          icon: User,
+          badge: null,
         },
       ],
     },

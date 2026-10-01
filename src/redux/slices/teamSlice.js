@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchAdvisors, inviteAdvisor, toggleAdvisorStatus } from '../thunks/teamThunk';
+import { fetchAdvisors, inviteAdvisor, toggleAdvisorStatus, deleteAdvisor } from '../thunks/teamThunk';
 
 const initialState = {
   advisors: [],
@@ -46,9 +46,18 @@ const teamSlice = createSlice({
         if (advisor) {
           advisor.status = status;
         }
+      })
+
+      // Delete Advisor
+      .addCase(deleteAdvisor.fulfilled, (state, action) => {
+        const { advisorId } = action.payload;
+        state.advisors = state.advisors.filter(
+          (a) => String(a._id || a.id) !== String(advisorId)
+        );
       });
   },
 });
 
 export const { clearTeamError } = teamSlice.actions;
 export default teamSlice.reducer;
+

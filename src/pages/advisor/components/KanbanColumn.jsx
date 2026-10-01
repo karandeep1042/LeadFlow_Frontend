@@ -68,7 +68,7 @@ export const KanbanColumn = ({
       }}
     >
       {/* Column Header */}
-      <Box sx={{ p: 2, pb: 1.5, borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff', borderTopLeftRadius: 10, borderTopRightRadius: 10 }}>
+      <Box sx={{ p: 2, pb: 1.5, borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff', borderTopLeftRadius: 36, borderTopRightRadius: 36 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: meta.color }} />

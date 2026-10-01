@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { Box, Container } from '@mui/material';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -9,7 +10,7 @@ export const DashboardLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleMobileNavToggle = () => {
-    setMobileOpen(!mobileOpen);
+    setMobileOpen((prev) => !prev);
   };
 
   const handleMobileNavClose = () => {
@@ -18,7 +19,7 @@ export const DashboardLayout = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      {/* Responsive Sidebar */}
+      {/* Persistent Responsive Sidebar */}
       <Sidebar mobileOpen={mobileOpen} onMobileClose={handleMobileNavClose} />
 
       {/* Main Content Area */}
@@ -35,7 +36,7 @@ export const DashboardLayout = ({ children }) => {
 
         <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 } }}>
           <Container maxWidth="xl" disableGutters>
-            {children}
+            {children || <Outlet />}
           </Container>
         </Box>
       </Box>

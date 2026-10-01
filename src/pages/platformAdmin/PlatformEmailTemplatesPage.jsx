@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Typography, Button, Paper, Stack } from '@mui/material';
 import { Mail, RefreshCw } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
   fetchPlatformTemplates,
   updatePlatformTemplate,
@@ -53,7 +52,7 @@ export default function PlatformEmailTemplatesPage() {
   };
 
   return (
-    <DashboardLayout>
+    <Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 6 }}>
         {/* Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
@@ -167,6 +166,6 @@ export default function PlatformEmailTemplatesPage() {
           loading={testLoading}
         />
       </Box>
-    </DashboardLayout>
+    </Box>
   );
 }

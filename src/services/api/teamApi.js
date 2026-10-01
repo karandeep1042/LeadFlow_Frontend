@@ -15,6 +15,19 @@ export const teamApi = {
     const response = await axiosInstance.patch(`/api/team/advisors/${advisorId}/status`, { status });
     return response.data;
   },
+
+  getAdvisorLeads: async (advisorId) => {
+    const response = await axiosInstance.get(`/api/team/advisors/${advisorId}/leads`);
+    return response.data;
+  },
+
+  deleteAdvisor: async (advisorId, payload = {}) => {
+    const response = await axiosInstance.delete(`/api/team/advisors/${advisorId}`, {
+      data: payload,
+    });
+    return response.data;
+  },
 };
 
 export default teamApi;
+
